@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FinCalc Pro — 金融计算器工具站</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="navbar">
+  <div class="role-selector" id="roleSelector">
+    <span class="role-icon" id="currentRoleIcon">👤</span>
+    <span class="role-name" id="currentRoleName">访客</span>
+    <span class="arrow">▼</span>
+    <div class="role-dropdown" id="roleDropdown">
+      <div class="role-option" data-role="guest">
+        <span class="ro-icon">👤</span>
+        <div class="ro-info"><span class="ro-name">访客</span><span class="ro-desc">浏览工具与基础计算</span></div>
+      </div>
+      <div class="role-option" data-role="student">
+        <span class="ro-icon">🎓</span>
+        <div class="ro-info"><span class="ro-name">学生</span><span class="ro-desc">学习中心 · 公式库 · 练习</span></div>
+      </div>
+      <div class="role-option" data-role="investor">
+        <span class="ro-icon">📈</span>
+        <div class="ro-info"><span class="ro-name">个人投资者</span><span class="ro-desc">投资工作台 · 组合分析</span></div>
+      </div>
+      <div class="role-option" data-role="pro">
+        <span class="ro-icon">💼</span>
+        <div class="ro-info"><span class="ro-name">金融从业者</span><span class="ro-desc">专业终端 · 债券/期权/DCF</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="logo">FinCalc Pro</div>
+
+  <nav class="nav-menu">
+    <a href="#" class="active" data-nav="home">首页</a>
+    <a href="#" data-nav="tools">工具</a>
+    <a href="#" data-nav="data">数据</a>
+    <a href="#" data-nav="learn">学习</a>
+    <a href="#" data-nav="about">关于</a>
+  </nav>
+
+  <div class="nav-right">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" placeholder="搜索工具、公式、文章..." />
+    </div>
+    <button class="btn-login">登录 / 注册</button>
+  </div>
+</header>
+
+<div class="ticker-bar" id="tickerBar"></div>
+
+<div class="page active" id="home">
+
+  <section class="hero" id="hero">
+    <div class="slide slide-1 active">
+      <div class="slide-bg"></div>
+      <div class="slide-content">
+        <span class="slide-tag">复利 · COMPOUND</span>
+        <h1 class="slide-title">让时间成为你的<span>财富杠杆</span></h1>
+        <p class="slide-desc">输入本金、利率与年限，直观看到复利如何把今天的每一分钱，变成未来的千万资产。</p>
+        <div class="slide-btns">
+          <button class="btn-primary" onclick="goCalc('compound')">开始计算</button>
+          <button class="btn-ghost" onclick="scrollToSection('learn')">了解复利</button>
+        </div>
+      </div>
+    </div>
+    <div class="slide slide-2">
+      <div class="slide-bg"></div>
+      <div class="slide-content">
+        <span class="slide-tag">房贷 · MORTGAGE</span>
+        <h1 class="slide-title">房贷怎么还，<span>更划算？</span></h1>
+        <p class="slide-desc">等额本息 vs 等额本金，一目了然对比总利息、月供压力与还款节奏。</p>
+        <div class="slide-btns">
+          <button class="btn-primary" onclick="goCalc('loan')">立即对比</button>
+          <button class="btn-ghost" onclick="scrollToSection('tools')">更多工具</button>
+        </div>
+      </div>
+    </div>
+    <div class="slide slide-3">
+      <div class="slide-bg"></div>
+      <div class="slide-content">
+        <span class="slide-tag">定投 · DCA</span>
+        <h1 class="slide-title">每月定投，<span>十年之后</span></h1>
+        <p class="slide-desc">用定投计算器，看看坚持每月投入，在复利作用下能积累多少财富。</p>
+        <div class="slide-btns">
+          <button class="btn-primary" onclick="goCalc('dca')">测算收益</button>
+          <button class="btn-ghost" onclick="scrollToSection('data')">查看市场</button>
+        </div>
+      </div>
+    </div>
+    <div class="slide slide-4">
+      <div class="slide-bg"></div>
+      <div class="slide-content">
+        <span class="slide-tag">债券 · BOND</span>
+        <h1 class="slide-title">债券定价与<span>久期分析</span></h1>
+        <p class="slide-desc">输入票息、到期收益率与期限，快速计算债券价格、久期与凸性。</p>
+        <div class="slide-btns">
+          <button class="btn-primary" onclick="goCalc('bond')">专业计算</button>
+          <button class="btn-ghost" onclick="scrollToSection('tools')">全部工具</button>
+        </div>
+      </div>
+    </div>
+    <div class="slide slide-5">
+      <div class="slide-bg"></div>
+      <div class="slide-content">
+        <span class="slide-tag">角色 · ROLE</span>
+        <h1 class="slide-title">从学生到<span>专业从业者</span></h1>
+        <p class="slide-desc">左上角切换你的角色，进入专属工作台，获得最贴合你需求的功能组合。</p>
+        <div class="slide-btns">
+          <button class="btn-primary" onclick="document.getElementById('roleSelector').click()">切换角色</button>
+          <button class="btn-ghost" onclick="scrollToSection('about')">了解我们</button>
+        </div>
+      </div>
+    </div>
+    <div class="hero-dots" id="heroDots"></div>
+  </section>
+
+  <section class="section" id="tools">
+    <div class="section-head">
+      <div class="section-tag">CORE TOOLS</div>
+      <h2 class="section-title">常用金融计算器</h2>
+      <p class="section-sub">覆盖货币时间价值、贷款、投资、债券与估值，每个工具都附带公式解释与可视化图表。</p>
+    </div>
+    <div class="tools-grid">
+      <div class="tool-card" onclick="goCalc('compound')">
+        <div class="tool-icon">💰</div>
+        <div class="tool-name">复利计算器</div>
+        <div class="tool-desc">本金、利率、年限与复利频率，计算终值与利息增长曲线。</div>
+        <div class="tool-link">立即使用 →</div>
+      </div>
+      <div class="tool-card" onclick="goCalc('loan')">
+        <div class="tool-icon">🏠</div>
+        <div class="tool-name">房贷计算器</div>
+        <div class="tool-desc">等额本息 / 等额本金对比，月供、总利息、还款计划表。</div>
+        <div class="tool-link">立即使用 →</div>
+      </div>
+      <div class="tool-card" onclick="goCalc('dca')">
+        <div class="tool-icon">📊</div>
+        <div class="tool-name">定投计算器</div>
+        <div class="tool-desc">每月投入、年化收益、年限，测算定投终值与收益曲线。</div>
+        <div class="tool-link">立即使用 →</div>
+      </div>
+      <div class="tool-card" onclick="goCalc('bond')">
+        <div class="tool-icon">📜</div>
+        <div class="tool-name">债券定价计算器</div>
+        <div class="tool-desc">票息、到期收益率、期限，计算价格、久期与凸性。</div>
+        <div class="tool-link">立即使用 →</div>
+      </div>
+      <div class="tool-card" onclick="alert('期权盈亏计算器开发中，敬请期待！')">
+        <div class="tool-icon">📉</div>
+        <div class="tool-name">期权盈亏计算器</div>
+        <div class="tool-desc">标的价、行权价、权利金，绘制到期盈亏图。</div>
+        <div class="tool-link">即将上线 →</div>
+      </div>
+      <div class="tool-card" onclick="alert('DCF 估值器开发中，敬请期待！')">
+        <div class="tool-icon">🏢</div>
+        <div class="tool-name">DCF 估值计算器</div>
+        <div class="tool-desc">自由现金流、增长率、折现率，估算企业价值。</div>
+        <div class="tool-link">即将上线 →</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section dashboard" id="data">
+    <div class="section-head">
+      <div class="section-tag">MARKET DATA</div>
+      <h2 class="section-title">市场数据看板</h2>
+      <p class="section-sub">指数、行业与资金流向一览。数据为演示用途，实际接入请替换为实时数据源。</p>
+    </div>
+    <div class="index-grid" id="indexGrid"></div>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <h3>近 12 个月模拟指数走势</h3>
+        <canvas id="lineChart" height="220"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>行业涨跌分布</h3>
+        <canvas id="barChart" height="220"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="learn">
+    <div class="section-head">
+      <div class="section-tag">LEARNING</div>
+      <h2 class="section-title">金融知识学习中心</h2>
+      <p class="section-sub">从货币时间价值到衍生品定价，配套公式库与练习题，边算边学。</p>
+    </div>
+    <div class="learn-grid">
+      <div class="article-list">
+        <div class="article-item">
+          <span class="article-tag">基础</span>
+          <div class="article-title">货币时间价值：今天的一块钱为什么比明天更值钱？</div>
+          <div class="article-summary">理解现值、终值、贴现率，是学习一切金融计算的第一步。</div>
+        </div>
+        <div class="article-item">
+          <span class="article-tag">贷款</span>
+          <div class="article-title">等额本息 vs 等额本金：哪种还款方式更适合你？</div>
+          <div class="article-summary">从月供压力、总利息、提前还款三个角度对比两种方式。</div>
+        </div>
+        <div class="article-item">
+          <span class="article-tag">投资</span>
+          <div class="article-title">定投的数学原理：为什么波动反而可能是朋友？</div>
+          <div class="article-summary">用定投计算器理解平均成本法与长期复利效应。</div>
+        </div>
+        <div class="article-item">
+          <span class="article-tag">债券</span>
+          <div class="article-title">债券价格与收益率：为什么利率上升，债券价格下降？</div>
+          <div class="article-summary">通过债券定价计算器，直观感受久期与凸性的作用。</div>
+        </div>
+      </div>
+      <div class="side-panel">
+        <h3>🔥 热门公式速查</h3>
+        <div class="formula-item">
+          <div class="f-name">复利终值</div>
+          <div class="f-val">FV = PV × (1 + r/n)^(n×t)</div>
+        </div>
+        <div class="formula-item">
+          <div class="f-name">等额本息月供</div>
+          <div class="f-val">M = P × r × (1+r)^n / [(1+r)^n - 1]</div>
+        </div>
+        <div class="formula-item">
+          <div class="f-name">定投终值</div>
+          <div class="f-val">FV = PMT × [((1+r)^n - 1) / r]</div>
+        </div>
+        <div class="formula-item">
+          <div class="f-name">债券价格</div>
+          <div class="f-val">P = Σ C/(1+y)^t + F/(1+y)^n</div>
+        </div>
+        <div class="formula-item">
+          <div class="f-name">夏普比率</div>
+          <div class="f-val">Sharpe = (Rp - Rf) / σp</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section dashboard">
+    <div class="stats">
+      <div><div class="stat-num">12,800+</div><div class="stat-label">注册用户</div></div>
+      <div><div class="stat-num">86,500+</div><div class="stat-label">累计计算次数</div></div>
+      <div><div class="stat-num">8</div><div class="stat-label">金融计算工具</div></div>
+      <div><div class="stat-num">120+</div><div class="stat-label">学习文章与公式</div></div>
+    </div>
+  </section>
+
+  <footer id="about">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div class="logo">FinCalc Pro</div>
+        <p>面向学生、投资者与金融从业者的金融计算与学习平台。所有计算仅供学习参考，不构成投资建议。</p>
+      </div>
+      <div class="footer-col">
+        <h4>工具</h4>
+        <a href="#" onclick="goCalc('compound');return false;">复利计算器</a>
+        <a href="#" onclick="goCalc('loan');return false;">房贷计算器</a>
+        <a href="#" onclick="goCalc('dca');return false;">定投计算器</a>
+        <a href="#" onclick="goCalc('bond');return false;">债券定价</a>
+      </div>
+      <div class="footer-col">
+        <h4>学习</h4>
+        <a href="#">金融基础</a>
+        <a href="#">公式库</a>
+        <a href="#">术语速查</a>
+        <a href="#">学习路线</a>
+      </div>
+      <div class="footer-col">
+        <h4>公司</h4>
+        <a href="#">关于我们</a>
+        <a href="#">联系我们</a>
+        <a href="#">加入我们</a>
+        <a href="#">免责声明</a>
+      </div>
+      <div class="footer-col">
+        <h4>订阅市场周报</h4>
+        <p style="font-size:13px;color:var(--text2);">每周一封，精选金融知识与工具更新。</p>
+        <div class="subscribe">
+          <input type="email" placeholder="你的邮箱" />
+          <button onclick="alert('订阅成功！')">订阅</button>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 FinCalc Pro · 仅供学习，不构成投资建议</span>
+      <span>数据来源：公开市场数据 · 延迟说明见各页面</span>
+    </div>
+  </footer>
+</div>
+
+<div class="page" id="workspace">
+  <div class="workspace">
+    <div class="ws-header">
+      <div class="ws-avatar" id="wsAvatar">🎓</div>
+      <div class="ws-title">
+        <h1 id="wsTitle">学习中心</h1>
+        <p id="wsDesc">为金融专业学生打造的学习与练习空间</p>
+      </div>
+      <div class="ws-stats" id="wsStats"></div>
+    </div>
+    <div class="ws-grid" id="wsGrid"></div>
+  </div>
+</div>
+
+<div class="page" id="calc">
+  <div class="calc-page">
+    <div class="calc-back" onclick="goPage('home')">← 返回首页</div>
+    <h1 class="calc-title" id="calcTitle">复利计算器</h1>
+    <p class="calc-sub" id="calcSub">计算复利终值，查看利息增长曲线与逐年明细。</p>
+    <div class="calc-layout">
+      <div class="calc-form" id="calcForm"></div>
+      <div class="calc-result" id="calcResult"></div>
+    </div>
+    <div class="disclaimer">⚠️ 免责声明：本工具所有计算结果仅供学习与参考，不构成任何投资建议。市场有风险，决策需谨慎。</div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

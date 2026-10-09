@@ -432,7 +432,7 @@ function calcCompound() {
     rows += `<tr><td>第 ${y} 年</td><td>${v.toFixed(2)}</td><td>${(v-pv).toFixed(2)}</td></tr>`;
   }
   document.getElementById('calcResult').innerHTML = `
-        <div class="result-cards">
+    <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">期末终值</div><div class="rc-value">¥${fv.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">利息总额</div><div class="rc-value">¥${interest.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">本金翻倍</div><div class="rc-value">${(fv/pv).toFixed(2)} 倍</div></div>
@@ -441,7 +441,10 @@ function calcCompound() {
       <h3 style="font-size:14px;margin-bottom:10px;">资产增长曲线</h3>
       <canvas id="resultChartCompound" height="200"></canvas>
     </div>
-    <h3 style="font-size:14px;margin:14px 0 10px;">逐年明细</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
+      <h3 style="font-size:14px;margin:0;">逐年明细</h3>
+      <button class="export-csv" onclick="exportTableCSV(this)">📥 导出 CSV</button>
+    </div>
     <table class="result-table">
       <thead><tr><th>年份</th><th>终值</th><th>累计利息</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -494,12 +497,15 @@ function calcLoan() {
   }
 
   document.getElementById('calcResult').innerHTML = `
-     <div class="result-cards">
+    <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">${type==='equal'?'每月月供':'首月月供'}</div><div class="rc-value">¥${monthly.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">总利息</div><div class="rc-value">¥${totalInterest.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">还款总额</div><div class="rc-value">¥${(P+totalInterest).toFixed(2)}</div></div>
     </div>
-    <h3 style="font-size:14px;margin:14px 0 10px;">还款计划（部分）</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
+      <h3 style="font-size:14px;margin:0;">还款计划（部分）</h3>
+      <button class="export-csv" onclick="exportTableCSV(this)">📥 导出 CSV</button>
+    </div>
     <table class="result-table">
       <thead><tr><th>期数</th><th>月供</th><th>本金</th><th>利息</th><th>剩余本金</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -533,7 +539,7 @@ function calcDCA() {
   const totalPrincipal = pmt * n;
   const profit = fv - totalPrincipal;
   document.getElementById('calcResult').innerHTML = `
-        <div class="result-cards">
+    <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">期末终值</div><div class="rc-value">¥${fv.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">投入本金</div><div class="rc-value">¥${totalPrincipal.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">累计收益</div><div class="rc-value">¥${profit.toFixed(2)}</div></div>
@@ -542,7 +548,10 @@ function calcDCA() {
       <h3 style="font-size:14px;margin-bottom:10px;">本金 vs 账户价值</h3>
       <canvas id="resultChartDCA" height="200"></canvas>
     </div>
-    <h3 style="font-size:14px;margin:14px 0 10px;">逐年明细</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
+      <h3 style="font-size:14px;margin:0;">逐年明细</h3>
+      <button class="export-csv" onclick="exportTableCSV(this)">📥 导出 CSV</button>
+    </div>
     <table class="result-table">
       <thead><tr><th>年份</th><th>累计本金</th><th>账户价值</th><th>累计收益</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -588,12 +597,15 @@ function calcBond() {
   convexity = convexity / (price * Math.pow(1 + yPeriod, 2) * n * n);
 
   document.getElementById('calcResult').innerHTML = `
-       <div class="result-cards">
+    <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">债券价格</div><div class="rc-value">¥${price.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">修正久期</div><div class="rc-value">${modified.toFixed(2)} 年</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">凸性</div><div class="rc-value">${convexity.toFixed(2)}</div></div>
     </div>
-    <h3 style="font-size:14px;margin:14px 0 10px;">关键指标</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
+      <h3 style="font-size:14px;margin:0;">关键指标</h3>
+      <button class="export-csv" onclick="exportTableCSV(this)">📥 导出 CSV</button>
+    </div>
     <table class="result-table">
       <thead><tr><th>指标</th><th>数值</th></tr></thead>
       <tbody>
@@ -817,4 +829,43 @@ function fallbackCopy(text, cb) {
   ta.select();
   try { document.execCommand('copy'); cb(); } catch (e) {}
   document.body.removeChild(ta);
+}
+
+
+/* ============ 导出表格为 CSV ============ */
+function exportTableCSV(btn) {
+  const container = btn.closest('.calc-result') || document;
+  const table = container.querySelector('.result-table');
+  if (!table) { alert('没有可导出的表格'); return; }
+
+  const rows = [];
+  const ths = table.querySelectorAll('thead th');
+  rows.push(Array.from(ths).map(th => `"${th.textContent.trim()}"`).join(','));
+
+  table.querySelectorAll('tbody tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    rows.push(Array.from(tds).map(td => {
+      const t = td.textContent.trim().replace(/"/g, '""');
+      return `"${t}"`;
+    }).join(','));
+  });
+
+  const csv = '\ufeff' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'fincalc-export-' + Date.now() + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  const old = btn.textContent;
+  btn.textContent = '✅ 已下载';
+  btn.classList.add('exported');
+  setTimeout(() => {
+    btn.textContent = old;
+    btn.classList.remove('exported');
+  }, 1500);
 }

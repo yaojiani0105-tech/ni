@@ -432,10 +432,10 @@ function calcCompound() {
     rows += `<tr><td>第 ${y} 年</td><td>${v.toFixed(2)}</td><td>${(v-pv).toFixed(2)}</td></tr>`;
   }
   document.getElementById('calcResult').innerHTML = `
-    <div class="result-cards">
-      <div class="result-card"><div class="rc-label">期末终值</div><div class="rc-value">¥${fv.toFixed(2)}</div></div>
-      <div class="result-card"><div class="rc-label">利息总额</div><div class="rc-value">¥${interest.toFixed(2)}</div></div>
-      <div class="result-card"><div class="rc-label">本金翻倍</div><div class="rc-value">${(fv/pv).toFixed(2)} 倍</div></div>
+        <div class="result-cards">
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">期末终值</div><div class="rc-value">¥${fv.toFixed(2)}</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">利息总额</div><div class="rc-value">¥${interest.toFixed(2)}</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">本金翻倍</div><div class="rc-value">${(fv/pv).toFixed(2)} 倍</div></div>
     </div>
     <div class="result-chart-box">
       <h3 style="font-size:14px;margin-bottom:10px;">资产增长曲线</h3>
@@ -494,10 +494,10 @@ function calcLoan() {
   }
 
   document.getElementById('calcResult').innerHTML = `
-    <div class="result-cards">
-      <div class="result-card"><div class="rc-label">${type==='equal'?'每月月供':'首月月供'}</div><div class="rc-value">¥${monthly.toFixed(2)}</div></div>
-      <div class="result-card"><div class="rc-label">总利息</div><div class="rc-value">¥${totalInterest.toFixed(2)}</div></div>
-      <div class="result-card"><div class="rc-label">还款总额</div><div class="rc-value">¥${(P+totalInterest).toFixed(2)}</div></div>
+     <div class="result-cards">
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">${type==='equal'?'每月月供':'首月月供'}</div><div class="rc-value">¥${monthly.toFixed(2)}</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">总利息</div><div class="rc-value">¥${totalInterest.toFixed(2)}</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">还款总额</div><div class="rc-value">¥${(P+totalInterest).toFixed(2)}</div></div>
     </div>
     <h3 style="font-size:14px;margin:14px 0 10px;">还款计划（部分）</h3>
     <table class="result-table">
@@ -533,10 +533,10 @@ function calcDCA() {
   const totalPrincipal = pmt * n;
   const profit = fv - totalPrincipal;
   document.getElementById('calcResult').innerHTML = `
-    <div class="result-cards">
-      <div class="result-card"><div class="rc-label">期末终值</div><div class="rc-value">¥${fv.toFixed(2)}</div></div>
-      <div class="result-card"><div class="rc-label">投入本金</div><div class="rc-value">¥${totalPrincipal.toFixed(2)}</div></div>
-      <div class="result-card"><div class="rc-label">累计收益</div><div class="rc-value">¥${profit.toFixed(2)}</div></div>
+        <div class="result-cards">
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">期末终值</div><div class="rc-value">¥${fv.toFixed(2)}</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">投入本金</div><div class="rc-value">¥${totalPrincipal.toFixed(2)}</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">累计收益</div><div class="rc-value">¥${profit.toFixed(2)}</div></div>
     </div>
     <div class="result-chart-box">
       <h3 style="font-size:14px;margin-bottom:10px;">本金 vs 账户价值</h3>
@@ -588,10 +588,10 @@ function calcBond() {
   convexity = convexity / (price * Math.pow(1 + yPeriod, 2) * n * n);
 
   document.getElementById('calcResult').innerHTML = `
-    <div class="result-cards">
-      <div class="result-card"><div class="rc-label">债券价格</div><div class="rc-value">¥${price.toFixed(2)}</div></div>
-      <div class="result-card"><div class="rc-label">修正久期</div><div class="rc-value">${modified.toFixed(2)} 年</div></div>
-      <div class="result-card"><div class="rc-label">凸性</div><div class="rc-value">${convexity.toFixed(2)}</div></div>
+       <div class="result-cards">
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">债券价格</div><div class="rc-value">¥${price.toFixed(2)}</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">修正久期</div><div class="rc-value">${modified.toFixed(2)} 年</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">凸性</div><div class="rc-value">${convexity.toFixed(2)}</div></div>
     </div>
     <h3 style="font-size:14px;margin:14px 0 10px;">关键指标</h3>
     <table class="result-table">
@@ -779,3 +779,42 @@ function initTheme() {
 }
 
 window.addEventListener('DOMContentLoaded', initTheme);
+
+
+/* ============ 结果一键复制 ============ */
+function copyCard(btn) {
+  const card = btn.closest('.result-card');
+  if (!card) return;
+  const valueEl = card.querySelector('.rc-value');
+  if (!valueEl) return;
+  const text = valueEl.textContent.trim();
+
+  function showCopied() {
+    const old = btn.textContent;
+    btn.textContent = '✅';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = old;
+      btn.classList.remove('copied');
+    }, 1500);
+  }
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(showCopied).catch(() => {
+      fallbackCopy(text, showCopied);
+    });
+  } else {
+    fallbackCopy(text, showCopied);
+  }
+}
+
+function fallbackCopy(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); cb(); } catch (e) {}
+  document.body.removeChild(ta);
+}

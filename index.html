@@ -4,6 +4,20 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>FinCalc Pro — 金融计算器工具站</title>
+
+<!-- favicon -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<!-- SEO & 分享卡片 -->
+<meta name="description" content="FinCalc Pro 免费金融计算器工具站：复利、房贷、定投、债券定价一站式计算，附公式讲解与可视化图表。" />
+<meta name="keywords" content="金融计算器,复利计算器,房贷计算器,定投计算器,债券定价,FinCalc" />
+<meta property="og:title" content="FinCalc Pro — 金融计算器工具站" />
+<meta property="og:description" content="复利、房贷、定投、债券定价，专业金融计算工具，附公式与可视化图表。" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://ni-97e.pages.dev" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="FinCalc Pro — 金融计算器工具站" />
+<meta name="twitter:description" content="复利、房贷、定投、债券定价，专业金融计算工具。" />
+
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -44,10 +58,11 @@
   </nav>
 
   <div class="nav-right">
-    <div class="search-box">
-      <span>🔍</span>
-      <input type="text" placeholder="搜索工具、公式、文章..." />
-    </div>
+    <div class="search-box" id="searchBox">
+  <span>🔍</span>
+  <input type="text" id="searchInput" placeholder="搜索工具、公式、文章..." autocomplete="off" />
+  <div class="search-dropdown" id="searchDropdown"></div>
+</div>
     <button class="btn-login">登录 / 注册</button>
   </div>
 </header>

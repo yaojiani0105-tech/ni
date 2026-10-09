@@ -495,3 +495,95 @@ function init() {
 }
 
 window.addEventListener('DOMContentLoaded', init);
+
+
+/* ============ 搜索功能 ============ */
+const searchIndex = [
+  { icon:'💰', name:'复利计算器',      tag:'工具', action:() => goCalc('compound') },
+  { icon:'🏠', name:'房贷计算器',      tag:'工具', action:() => goCalc('loan') },
+  { icon:'📊', name:'定投计算器',      tag:'工具', action:() => goCalc('dca') },
+  { icon:'📜', name:'债券定价计算器',  tag:'工具', action:() => goCalc('bond') },
+  { icon:'📉', name:'期权盈亏计算器',  tag:'即将上线', action:() => alert('期权盈亏计算器开发中，敬请期待！') },
+  { icon:'🏢', name:'DCF 估值计算器',  tag:'即将上线', action:() => alert('DCF 估值器开发中，敬请期待！') },
+  { icon:'📈', name:'市场数据看板',    tag:'数据', action:() => scrollToSection('data') },
+  { icon:'📚', name:'金融知识学习中心', tag:'学习', action:() => scrollToSection('learn') },
+  { icon:'🧮', name:'复利终值公式',    tag:'公式', action:() => scrollToSection('learn') },
+  { icon:'🧮', name:'等额本息月供公式', tag:'公式', action:() => scrollToSection('learn') },
+  { icon:'🧮', name:'定投终值公式',    tag:'公式', action:() => scrollToSection('learn') },
+  { icon:'🧮', name:'债券价格公式',    tag:'公式', action:() => scrollToSection('learn') },
+  { icon:'🧮', name:'夏普比率公式',    tag:'公式', action:() => scrollToSection('learn') }
+];
+
+function initSearch() {
+  const box   = document.getElementById('searchBox');
+  const input = document.getElementById('searchInput');
+  const dd    = document.getElementById('searchDropdown');
+  if (!box || !input || !dd) return;
+
+  function render(list, keyword) {
+    if (!keyword.trim()) {
+      dd.innerHTML = `<div class="search-empty">输入关键词，搜索工具 / 公式 / 文章</div>`;
+    } else if (list.length === 0) {
+      dd.innerHTML = `<div class="search-empty">没有找到「${keyword}」相关内容</div>`;
+    } else {
+      dd.innerHTML = list.map((item, i) => `
+        <div class="search-item" data-idx="${i}">
+          <span class="si-icon">${item.icon}</span>
+          <span class="si-name">${item.name}</span>
+          <span class="si-tag">${item.tag}</span>
+        </div>
+      `).join('');
+      dd.querySelectorAll('.search-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const idx = +el.dataset.idx;
+          list[idx].action();
+          dd.classList.remove('open');
+          input.value = '';
+        });
+      });
+    }
+  }
+
+  input.addEventListener('input', () => {
+    const kw = input.value.trim();
+    const list = searchIndex.filter(x =>
+      x.name.toLowerCase().includes(kw.toLowerCase()) ||
+      x.tag.toLowerCase().includes(kw.toLowerCase())
+    );
+    render(list, input.value);
+    dd.classList.add('open');
+  });
+
+  input.addEventListener('focus', () => {
+    const kw = input.value.trim();
+    const list = searchIndex.filter(x =>
+      x.name.toLowerCase().includes(kw.toLowerCase())
+    );
+    render(list, input.value);
+    dd.classList.add('open');
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const kw = input.value.trim();
+      if (!kw) return;
+      const list = searchIndex.filter(x =>
+        x.name.toLowerCase().includes(kw.toLowerCase()) ||
+        x.tag.toLowerCase().includes(kw.toLowerCase())
+      );
+      if (list.length > 0) {
+        list[0].action();
+        dd.classList.remove('open');
+        input.value = '';
+      }
+    } else if (e.key === 'Escape') {
+      dd.classList.remove('open');
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!box.contains(e.target)) dd.classList.remove('open');
+  });
+}
+
+window.addEventListener('DOMContentLoaded', initSearch);

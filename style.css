@@ -417,3 +417,40 @@ footer {
   .ws-stats { margin-left: 0; }
   .section { padding: 48px 5%; }
 }
+
+/* ===== 搜索下拉建议 ===== */
+.search-box { position: relative; }
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+  display: none;
+  max-height: 320px;
+  overflow-y: auto;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.55);
+  z-index: 1100;
+}
+.search-dropdown.open { display: block; }
+.search-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 8px;
+  cursor: pointer; font-size: 13px;
+  transition: background .15s;
+}
+.search-item:hover { background: var(--bg3); }
+.search-item .si-icon { font-size: 16px; }
+.search-item .si-name { font-weight: 600; }
+.search-item .si-tag {
+  margin-left: auto; font-size: 11px; color: var(--text2);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 1px 7px;
+}
+.search-empty {
+  padding: 14px 12px; text-align: center;
+  font-size: 12px; color: var(--text2);
+}

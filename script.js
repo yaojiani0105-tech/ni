@@ -226,6 +226,118 @@ function drawBarChart() {
   });
 }
 
+/* ============ 折线图辅助：数值缩写 ============ */
+function formatShort(v) {
+  if (v >= 1e8) return (v/1e8).toFixed(1) + '亿';
+  if (v >= 1e4) return (v/1e4).toFixed(1) + '万';
+  return Math.round(v).toString();
+}
+
+/* ============ 计算器结果折线图 ============ */
+function drawResultChart(canvasId, series) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth || 500;
+  const H = canvas.height = 200;
+  const pad = { l: 50, r: 20, t: 20, b: 28 };
+  const allVals = series.flatMap(s => s.data);
+  const max = Math.max(...allVals) * 1.08;
+  const min = 0;
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.strokeStyle = '#243049'; ctx.lineWidth = 1;
+  ctx.fillStyle = '#8fa3c8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (H - pad.t - pad.b) * i / 4;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    const val = max - (max - min) * i / 4;
+    ctx.fillText(formatShort(val), pad.l - 6, y + 3);
+  }
+
+  const colors = ['#f5b942', '#2ee6d6', '#3b82f6', '#ff4d5e'];
+
+  series.forEach((s, si) => {
+    const stepX = (W - pad.l - pad.r) / Math.max(s.data.length - 1, 1);
+    ctx.beginPath();
+    s.data.forEach((v, i) => {
+      const x = pad.l + stepX * i;
+      const y = H - pad.b - (H - pad.t - pad.b) * (v - min) / (max - min);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = colors[si % colors.length];
+    ctx.lineWidth = 2.2;
+    ctx.stroke();
+
+    if (si === 0) {
+      ctx.lineTo(pad.l + stepX * (s.data.length - 1), H - pad.b);
+      ctx.lineTo(pad.l, H - pad.b);
+      ctx.closePath();
+      const g = ctx.createLinearGradient(0, pad.t, 0, H - pad.b);
+      g.addColorStop(0, 'rgba(245,185,66,0.25)');
+      g.addColorStop(1, 'rgba(245,185,66,0)');
+      ctx.fillStyle = g;
+      ctx.fill();
+    }
+  });
+
+  let lx = pad.l;
+  series.forEach((s, si) => {
+    ctx.fillStyle = colors[si % colors.length];
+    ctx.fillRect(lx, 4, 10, 3);
+    ctx.fillStyle = '#8fa3c8';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(s.name, lx + 14, 8);
+    lx += ctx.measureText(s.name).width + 32;
+  });
+}
+
+/* ============ 计算历史 ============ */
+const HISTORY_KEY = 'fincalc_history';
+const HISTORY_MAX = 5;
+
+function saveHistory(entry) {
+  try {
+    let list = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    list.unshift({ ...entry, time: Date.now() });
+    list = list.slice(0, HISTORY_MAX);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  } catch (e) {}
+}
+
+function renderHistory() {
+  const el = document.getElementById('calcHistory');
+  if (!el) return;
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch (e) {}
+  if (!list.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <div class="history-box">
+      <div class="history-head">
+        <span>🕘 最近计算</span>
+        <button class="history-clear" onclick="clearHistory()">清空</button>
+      </div>
+      <div class="history-list">
+        ${list.map(h => `
+          <div class="history-item" onclick="goCalc('${h.type}')">
+            <span class="hi-title">${h.title}</span>
+            <span class="hi-summary">${h.summary}</span>
+            <span class="hi-time">${new Date(h.time).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function clearHistory() {
+  if (!confirm('确定清空所有计算历史吗？')) return;
+  localStorage.removeItem(HISTORY_KEY);
+  renderHistory();
+}
+
+/* ============ 计算器配置 ============ */
 const calcConfig = {
   compound: {
     title: '复利计算器',
@@ -301,8 +413,10 @@ function goCalc(key) {
   document.getElementById('calcResult').innerHTML = '<p style="color:var(--text2);font-size:14px;">填写左侧参数后点击计算，结果将显示在这里。</p>';
   goPage('calc');
   setTimeout(() => cfg.run(), 50);
+  setTimeout(renderHistory, 60);
 }
 
+/* ============ 各计算器 ============ */
 function calcCompound() {
   const pv = +document.getElementById('c_pv').value;
   const r = +document.getElementById('c_r').value / 100;
@@ -311,8 +425,10 @@ function calcCompound() {
   const fv = pv * Math.pow(1 + r/n, n*t);
   const interest = fv - pv;
   let rows = '';
+  const chartData = [pv];
   for (let y = 1; y <= t; y++) {
     const v = pv * Math.pow(1 + r/n, n*y);
+    chartData.push(v);
     rows += `<tr><td>第 ${y} 年</td><td>${v.toFixed(2)}</td><td>${(v-pv).toFixed(2)}</td></tr>`;
   }
   document.getElementById('calcResult').innerHTML = `
@@ -321,12 +437,24 @@ function calcCompound() {
       <div class="result-card"><div class="rc-label">利息总额</div><div class="rc-value">¥${interest.toFixed(2)}</div></div>
       <div class="result-card"><div class="rc-label">本金翻倍</div><div class="rc-value">${(fv/pv).toFixed(2)} 倍</div></div>
     </div>
-    <h3 style="font-size:14px;margin-bottom:10px;">逐年明细</h3>
+    <div class="result-chart-box">
+      <h3 style="font-size:14px;margin-bottom:10px;">资产增长曲线</h3>
+      <canvas id="resultChartCompound" height="200"></canvas>
+    </div>
+    <h3 style="font-size:14px;margin:14px 0 10px;">逐年明细</h3>
     <table class="result-table">
       <thead><tr><th>年份</th><th>终值</th><th>累计利息</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+    <div id="calcHistory"></div>
   `;
+  drawResultChart('resultChartCompound', [{ name: '资产总额', data: chartData }]);
+  saveHistory({
+    type: 'compound',
+    title: '复利 · ¥' + pv.toLocaleString(),
+    summary: `年利率 ${(+document.getElementById('c_r').value).toFixed(1)}% · ${t} 年 → ¥${fv.toFixed(0)}`
+  });
+  renderHistory();
 }
 
 function calcLoan() {
@@ -371,12 +499,19 @@ function calcLoan() {
       <div class="result-card"><div class="rc-label">总利息</div><div class="rc-value">¥${totalInterest.toFixed(2)}</div></div>
       <div class="result-card"><div class="rc-label">还款总额</div><div class="rc-value">¥${(P+totalInterest).toFixed(2)}</div></div>
     </div>
-    <h3 style="font-size:14px;margin-bottom:10px;">还款计划（部分）</h3>
+    <h3 style="font-size:14px;margin:14px 0 10px;">还款计划（部分）</h3>
     <table class="result-table">
       <thead><tr><th>期数</th><th>月供</th><th>本金</th><th>利息</th><th>剩余本金</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+    <div id="calcHistory"></div>
   `;
+  saveHistory({
+    type: 'loan',
+    title: '房贷 · ¥' + P.toLocaleString(),
+    summary: `${(+document.getElementById('l_r').value).toFixed(2)}% · ${+document.getElementById('l_t').value} 年 · 月供 ¥${monthly.toFixed(0)}`
+  });
+  renderHistory();
 }
 
 function calcDCA() {
@@ -385,10 +520,13 @@ function calcDCA() {
   const t = +document.getElementById('d_t').value;
   const n = t * 12;
   let fv = 0, rows = '';
+  const chartPrincipal = [0], chartValue = [0];
   for (let i = 1; i <= n; i++) {
     fv = (fv + pmt) * (1 + r);
     if (i % 12 === 0) {
       const principal = pmt * i;
+      chartPrincipal.push(principal);
+      chartValue.push(fv);
       rows += `<tr><td>第 ${i/12} 年</td><td>${principal.toFixed(2)}</td><td>${fv.toFixed(2)}</td><td>${(fv-principal).toFixed(2)}</td></tr>`;
     }
   }
@@ -400,12 +538,27 @@ function calcDCA() {
       <div class="result-card"><div class="rc-label">投入本金</div><div class="rc-value">¥${totalPrincipal.toFixed(2)}</div></div>
       <div class="result-card"><div class="rc-label">累计收益</div><div class="rc-value">¥${profit.toFixed(2)}</div></div>
     </div>
-    <h3 style="font-size:14px;margin-bottom:10px;">逐年明细</h3>
+    <div class="result-chart-box">
+      <h3 style="font-size:14px;margin-bottom:10px;">本金 vs 账户价值</h3>
+      <canvas id="resultChartDCA" height="200"></canvas>
+    </div>
+    <h3 style="font-size:14px;margin:14px 0 10px;">逐年明细</h3>
     <table class="result-table">
       <thead><tr><th>年份</th><th>累计本金</th><th>账户价值</th><th>累计收益</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
+    <div id="calcHistory"></div>
   `;
+  drawResultChart('resultChartDCA', [
+    { name: '累计投入', data: chartPrincipal },
+    { name: '账户价值', data: chartValue }
+  ]);
+  saveHistory({
+    type: 'dca',
+    title: '定投 · ¥' + pmt.toLocaleString() + '/月',
+    summary: `年化 ${(+document.getElementById('d_r').value).toFixed(1)}% · ${t} 年 → ¥${fv.toFixed(0)}`
+  });
+  renderHistory();
 }
 
 function calcBond() {
@@ -440,7 +593,7 @@ function calcBond() {
       <div class="result-card"><div class="rc-label">修正久期</div><div class="rc-value">${modified.toFixed(2)} 年</div></div>
       <div class="result-card"><div class="rc-label">凸性</div><div class="rc-value">${convexity.toFixed(2)}</div></div>
     </div>
-    <h3 style="font-size:14px;margin-bottom:10px;">关键指标</h3>
+    <h3 style="font-size:14px;margin:14px 0 10px;">关键指标</h3>
     <table class="result-table">
       <thead><tr><th>指标</th><th>数值</th></tr></thead>
       <tbody>
@@ -451,9 +604,17 @@ function calcBond() {
         <tr><td>付息期数</td><td>${periods} 期</td></tr>
       </tbody>
     </table>
+    <div id="calcHistory"></div>
   `;
+  saveHistory({
+    type: 'bond',
+    title: '债券 · 面值 ¥' + F.toLocaleString(),
+    summary: `票息 ${(+document.getElementById('b_c').value).toFixed(1)}% · YTM ${(+document.getElementById('b_y').value).toFixed(1)}% → 价格 ¥${price.toFixed(2)}`
+  });
+  renderHistory();
 }
 
+/* ============ 事件初始化 ============ */
 function initEvents() {
   const roleSelector = document.getElementById('roleSelector');
   const roleDropdown = document.getElementById('roleDropdown');
@@ -484,18 +645,6 @@ function initEvents() {
 
   window.addEventListener('resize', () => { drawLineChart(); drawBarChart(); });
 }
-
-function init() {
-  initEvents();
-  initCarousel();
-  renderIndices();
-  drawLineChart();
-  drawBarChart();
-  setRole(currentRole);
-}
-
-window.addEventListener('DOMContentLoaded', init);
-
 
 /* ============ 搜索功能 ============ */
 const searchIndex = [
@@ -586,4 +735,15 @@ function initSearch() {
   });
 }
 
-window.addEventListener('DOMContentLoaded', initSearch);
+/* ============ 初始化 ============ */
+function init() {
+  initEvents();
+  initCarousel();
+  renderIndices();
+  drawLineChart();
+  drawBarChart();
+  setRole(currentRole);
+  initSearch();
+}
+
+window.addEventListener('DOMContentLoaded', init);

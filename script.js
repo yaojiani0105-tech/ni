@@ -346,7 +346,7 @@ const calcConfig = {
       <div class="form-group"><label>初始本金（元）</label><input type="number" id="c_pv" value="100000" /></div>
       <div class="form-group"><label>年利率（%）</label><input type="number" id="c_r" value="8" step="0.1" /></div>
       <div class="form-group"><label>投资年限（年）</label><input type="number" id="c_t" value="10" /></div>
-      <div class="form-group"><label>复利频率</label>
+           <div class="form-group"><label>复利频率</label>
         <select id="c_n">
           <option value="1">每年</option>
           <option value="2">每半年</option>
@@ -354,6 +354,12 @@ const calcConfig = {
           <option value="12" selected>每月</option>
           <option value="365">每日</option>
         </select>
+      </div>
+      <div class="preset-row">
+        <span class="preset-label">预设：</span>
+        <button class="preset-btn" onclick="applyPreset('compound','conservative')">🛡️ 保守 3%</button>
+        <button class="preset-btn" onclick="applyPreset('compound','balanced')">⚖️ 稳健 6%</button>
+        <button class="preset-btn" onclick="applyPreset('compound','aggressive')">🚀 激进 10%</button>
       </div>
       <button class="calc-btn" onclick="calcCompound()">计算终值</button>
     `,
@@ -366,11 +372,17 @@ const calcConfig = {
       <div class="form-group"><label>贷款金额（元）</label><input type="number" id="l_p" value="1000000" /></div>
       <div class="form-group"><label>年利率（%）</label><input type="number" id="l_r" value="4.2" step="0.01" /></div>
       <div class="form-group"><label>贷款年限（年）</label><input type="number" id="l_t" value="30" /></div>
-      <div class="form-group"><label>还款方式</label>
+           <div class="form-group"><label>还款方式</label>
         <select id="l_type">
           <option value="equal">等额本息</option>
           <option value="principal">等额本金</option>
         </select>
+      </div>
+      <div class="preset-row">
+        <span class="preset-label">预设利率：</span>
+        <button class="preset-btn" onclick="applyPreset('loan','first')">🏠 首套 3.1%</button>
+        <button class="preset-btn" onclick="applyPreset('loan','second')">🏡 二套 3.5%</button>
+        <button class="preset-btn" onclick="applyPreset('loan','commercial')">💼 商贷 4.2%</button>
       </div>
       <button class="calc-btn" onclick="calcLoan()">计算月供</button>
     `,
@@ -382,7 +394,13 @@ const calcConfig = {
     form: `
       <div class="form-group"><label>每月投入（元）</label><input type="number" id="d_pmt" value="3000" /></div>
       <div class="form-group"><label>预期年化收益（%）</label><input type="number" id="d_r" value="8" step="0.1" /></div>
-      <div class="form-group"><label>定投年限（年）</label><input type="number" id="d_t" value="10" /></div>
+           <div class="form-group"><label>定投年限（年）</label><input type="number" id="d_t" value="10" /></div>
+      <div class="preset-row">
+        <span class="preset-label">预设：</span>
+        <button class="preset-btn" onclick="applyPreset('dca','conservative')">🛡️ 保守 4%</button>
+        <button class="preset-btn" onclick="applyPreset('dca','balanced')">⚖️ 稳健 7%</button>
+        <button class="preset-btn" onclick="applyPreset('dca','aggressive')">🚀 激进 12%</button>
+      </div>
       <button class="calc-btn" onclick="calcDCA()">计算收益</button>
     `,
     run: calcDCA
@@ -868,4 +886,36 @@ function exportTableCSV(btn) {
     btn.textContent = old;
     btn.classList.remove('exported');
   }, 1500);
+}
+
+
+/* ============ 计算器预设方案 ============ */
+const PRESETS = {
+  compound: {
+    conservative: { c_r: 3 },
+    balanced:     { c_r: 6 },
+    aggressive:   { c_r: 10 }
+  },
+  dca: {
+    conservative: { d_r: 4 },
+    balanced:     { d_r: 7 },
+    aggressive:   { d_r: 12 }
+  },
+  loan: {
+    first:      { l_r: 3.1 },
+    second:     { l_r: 3.5 },
+    commercial: { l_r: 4.2 }
+  }
+};
+
+function applyPreset(calcKey, presetKey) {
+  const preset = PRESETS[calcKey] && PRESETS[calcKey][presetKey];
+  if (!preset) return;
+  Object.entries(preset).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+  if (calcKey === 'compound') calcCompound();
+  else if (calcKey === 'dca') calcDCA();
+  else if (calcKey === 'loan') calcLoan();
 }

@@ -690,7 +690,11 @@ const searchIndex = [
   { icon:'🧮', name:'等额本息月供公式', tag:'公式', action:() => scrollToSection('learn') },
   { icon:'🧮', name:'定投终值公式',    tag:'公式', action:() => scrollToSection('learn') },
   { icon:'🧮', name:'债券价格公式',    tag:'公式', action:() => scrollToSection('learn') },
-  { icon:'🧮', name:'夏普比率公式',    tag:'公式', action:() => scrollToSection('learn') }
+  { icon:'🧮', name:'夏普比率公式',    tag:'公式', action:() => scrollToSection('learn') },
+  { icon:'📖', name:'货币时间价值',    tag:'文章', action:() => openArticle('tvm') },
+  { icon:'📖', name:'等额本息 vs 等额本金', tag:'文章', action:() => openArticle('loanCompare') },
+  { icon:'📖', name:'定投的数学原理',  tag:'文章', action:() => openArticle('dcaTheory') },
+  { icon:'📖', name:'债券价格与收益率', tag:'文章', action:() => openArticle('bondYield') }
 ];
 
 function initSearch() {
@@ -918,4 +922,113 @@ function applyPreset(calcKey, presetKey) {
   if (calcKey === 'compound') calcCompound();
   else if (calcKey === 'dca') calcDCA();
   else if (calcKey === 'loan') calcLoan();
+}
+
+
+/* ============ 文章内容（弹窗显示） ============ */
+const ARTICLES = {
+  tvm: {
+    title: '货币时间价值：今天的一块钱为什么比明天更值钱？',
+    tag: '基础',
+    content: `
+      <h3>什么是货币时间价值？</h3>
+      <p>同样是一块钱，今天拿到和一年后拿到，价值是不一样的。今天的一块钱可以立即投资产生收益，而一年后的一块钱则错过了这一年的机会。</p>
+      <h3>核心概念</h3>
+      <ul>
+        <li><strong>现值（PV）</strong>：未来的钱折算到今天的价值</li>
+        <li><strong>终值（FV）</strong>：今天的钱在未来某个时间点的价值</li>
+        <li><strong>贴现率（r）</strong>：把未来价值折算成现值的利率</li>
+      </ul>
+      <h3>核心公式</h3>
+      <p style="font-family:monospace;color:var(--gold);">FV = PV × (1 + r)^t</p>
+      <p>这个公式是所有金融计算的基础。复利、贷款、定投、债券定价，全部建立在这个基础上。</p>
+      <h3>举个栗子</h3>
+      <p>今天存 10 万元，年利率 8%，10 年后变成：</p>
+      <p style="font-family:monospace;color:var(--gold);">100000 × (1 + 0.08)^10 ≈ 215892 元</p>
+      <p>利息超过本金，这就是复利的力量。</p>
+    `
+  },
+  loanCompare: {
+    title: '等额本息 vs 等额本金：哪种还款方式更适合你？',
+    tag: '贷款',
+    content: `
+      <h3>两种还款方式的本质区别</h3>
+      <p><strong>等额本息</strong>：每月还款额固定，前期利息多本金少，后期利息少本金多。</p>
+      <p><strong>等额本金</strong>：每月本金固定，利息逐月递减，月供前高后低。</p>
+      <h3>对比</h3>
+      <ul>
+        <li><strong>月供压力</strong>：等额本金前期压力大，等额本息每月相同</li>
+        <li><strong>总利息</strong>：等额本金总利息更少（因为本金还的快）</li>
+        <li><strong>提前还款</strong>：等额本金更适合提前还，因为利息已经省了不少</li>
+      </ul>
+      <h3>怎么选？</h3>
+      <p>收入稳定、希望月供固定 → 选等额本息</p>
+      <p>收入较高、希望总利息少 → 选等额本金</p>
+    `
+  },
+  dcaTheory: {
+    title: '定投的数学原理：为什么波动反而可能是朋友？',
+    tag: '投资',
+    content: `
+      <h3>定投的核心逻辑</h3>
+      <p>每月固定金额买入，价格高时买得少，价格低时买得多，长期下来平均成本被"平滑"。</p>
+      <h3>为什么波动是朋友？</h3>
+      <p>假设每月投 3000 元：</p>
+      <ul>
+        <li>价格 10 元时 → 买 300 份</li>
+        <li>价格 5 元时 → 买 600 份</li>
+        <li>价格 15 元时 → 买 200 份</li>
+      </ul>
+      <p>低价时买得多，这就是定投"越跌越买"的数学原理。</p>
+      <h3>定投终值公式</h3>
+      <p style="font-family:monospace;color:var(--gold);">FV = PMT × [((1+r)^n - 1) / r]</p>
+      <p>其中 PMT 是每月投入，r 是月化收益率，n 是总期数。</p>
+    `
+  },
+  bondYield: {
+    title: '债券价格与收益率：为什么利率上升，债券价格下降？',
+    tag: '债券',
+    content: `
+      <h3>债券定价的核心</h3>
+      <p>债券价格 = 未来所有现金流的现值之和。</p>
+      <p style="font-family:monospace;color:var(--gold);">P = Σ C/(1+y)^t + F/(1+y)^n</p>
+      <h3>为什么利率上升，价格下降？</h3>
+      <p>债券的票息是固定的。当市场利率上升时，新发行的债券票息更高，你手里的老债券就"不香了"，只能降价出售，直到收益率追上市场水平。</p>
+      <h3>久期与凸性</h3>
+      <p><strong>久期</strong>：衡量债券价格对利率变化的敏感度。久期越长，价格波动越大。</p>
+      <p><strong>凸性</strong>：久期的补充，用来修正久期在大幅利率变动时的偏差。</p>
+    `
+  }
+};
+
+function openArticle(key) {
+  const art = ARTICLES[key];
+  if (!art) return;
+  // 如果已有旧弹窗先移除
+  const old = document.getElementById('articleModal');
+  if (old) old.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'articleModal';
+  modal.className = 'article-modal';
+  modal.innerHTML = `
+    <div class="article-modal-mask" onclick="closeArticle()"></div>
+    <div class="article-modal-box">
+      <div class="article-modal-head">
+        <span class="article-modal-tag">${art.tag}</span>
+        <button class="article-modal-close" onclick="closeArticle()">✕</button>
+      </div>
+      <h2 class="article-modal-title">${art.title}</h2>
+      <div class="article-modal-body">${art.content}</div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  requestAnimationFrame(() => modal.classList.add('open'));
+}
+
+function closeArticle() {
+  const modal = document.getElementById('articleModal');
+  if (!modal) return;
+  modal.classList.remove('open');
+  setTimeout(() => modal.remove(), 250);
 }

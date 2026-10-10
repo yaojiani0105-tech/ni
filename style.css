@@ -754,3 +754,37 @@ footer {
 .article-modal-body strong {
   color: var(--text);
 }
+
+
+/* ===== 工具卡片收藏星标 ===== */
+.tool-card { position: relative; }
+.fav-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s;
+  cursor: pointer;
+  z-index: 2;
+  padding: 0;
+}
+.fav-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: scale(1.15);
+}
+.fav-btn.active {
+  background: rgba(245,185,66,0.15);
+  border-color: var(--gold);
+  color: var(--gold);
+}

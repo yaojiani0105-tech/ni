@@ -1032,3 +1032,61 @@ function closeArticle() {
   modal.classList.remove('open');
   setTimeout(() => modal.remove(), 250);
 }
+
+
+/* ============ 工具卡片收藏 ============ */
+const FAV_KEY = 'fincalc_favorites';
+
+function getFavorites() {
+  try {
+    return JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+  } catch (e) { return []; }
+}
+
+function saveFavorites(list) {
+  localStorage.setItem(FAV_KEY, JSON.stringify(list));
+}
+
+function toggleFav(event, toolId) {
+  event.stopPropagation();
+  let favs = getFavorites();
+  const idx = favs.indexOf(toolId);
+  if (idx >= 0) {
+    favs.splice(idx, 1);
+  } else {
+    favs.push(toolId);
+  }
+  saveFavorites(favs);
+  applyFavorites();
+}
+
+function applyFavorites() {
+  const grid = document.getElementById('toolsGrid');
+  if (!grid) return;
+  const favs = getFavorites();
+  const cards = Array.from(grid.querySelectorAll('.tool-card'));
+
+  // 更新每张卡片的星标状态
+  cards.forEach(card => {
+    const id = card.dataset.tool;
+    const btn = card.querySelector('.fav-btn');
+    if (!btn) return;
+    if (favs.includes(id)) {
+      btn.textContent = '★';
+      btn.classList.add('active');
+    } else {
+      btn.textContent = '☆';
+      btn.classList.remove('active');
+    }
+  });
+
+  // 重新排序：收藏的排前面，其余保持原顺序
+  const sorted = cards.slice().sort((a, b) => {
+    const aFav = favs.includes(a.dataset.tool) ? 0 : 1;
+    const bFav = favs.includes(b.dataset.tool) ? 0 : 1;
+    return aFav - bFav;
+  });
+  sorted.forEach(card => grid.appendChild(card));
+}
+
+window.addEventListener('DOMContentLoaded', applyFavorites);

@@ -142,38 +142,44 @@
       <h2 class="section-title">常用金融计算器</h2>
       <p class="section-sub">覆盖货币时间价值、贷款、投资、债券与估值，每个工具都附带公式解释与可视化图表。</p>
     </div>
-    <div class="tools-grid">
-      <div class="tool-card" onclick="goCalc('compound')">
+       <div class="tools-grid" id="toolsGrid">
+      <div class="tool-card" data-tool="compound" onclick="goCalc('compound')">
+        <button class="fav-btn" onclick="toggleFav(event,'compound')" title="收藏">☆</button>
         <div class="tool-icon">💰</div>
         <div class="tool-name">复利计算器</div>
         <div class="tool-desc">本金、利率、年限与复利频率，计算终值与利息增长曲线。</div>
         <div class="tool-link">立即使用 →</div>
       </div>
-      <div class="tool-card" onclick="goCalc('loan')">
+      <div class="tool-card" data-tool="loan" onclick="goCalc('loan')">
+        <button class="fav-btn" onclick="toggleFav(event,'loan')" title="收藏">☆</button>
         <div class="tool-icon">🏠</div>
         <div class="tool-name">房贷计算器</div>
         <div class="tool-desc">等额本息 / 等额本金对比，月供、总利息、还款计划表。</div>
         <div class="tool-link">立即使用 →</div>
       </div>
-      <div class="tool-card" onclick="goCalc('dca')">
+      <div class="tool-card" data-tool="dca" onclick="goCalc('dca')">
+        <button class="fav-btn" onclick="toggleFav(event,'dca')" title="收藏">☆</button>
         <div class="tool-icon">📊</div>
         <div class="tool-name">定投计算器</div>
         <div class="tool-desc">每月投入、年化收益、年限，测算定投终值与收益曲线。</div>
         <div class="tool-link">立即使用 →</div>
       </div>
-      <div class="tool-card" onclick="goCalc('bond')">
+      <div class="tool-card" data-tool="bond" onclick="goCalc('bond')">
+        <button class="fav-btn" onclick="toggleFav(event,'bond')" title="收藏">☆</button>
         <div class="tool-icon">📜</div>
         <div class="tool-name">债券定价计算器</div>
         <div class="tool-desc">票息、到期收益率、期限，计算价格、久期与凸性。</div>
         <div class="tool-link">立即使用 →</div>
       </div>
-      <div class="tool-card" onclick="alert('期权盈亏计算器开发中，敬请期待！')">
+      <div class="tool-card" data-tool="option" onclick="alert('期权盈亏计算器开发中，敬请期待！')">
+        <button class="fav-btn" onclick="toggleFav(event,'option')" title="收藏">☆</button>
         <div class="tool-icon">📉</div>
         <div class="tool-name">期权盈亏计算器</div>
         <div class="tool-desc">标的价、行权价、权利金，绘制到期盈亏图。</div>
         <div class="tool-link">即将上线 →</div>
       </div>
-      <div class="tool-card" onclick="alert('DCF 估值器开发中，敬请期待！')">
+      <div class="tool-card" data-tool="dcf" onclick="alert('DCF 估值器开发中，敬请期待！')">
+        <button class="fav-btn" onclick="toggleFav(event,'dcf')" title="收藏">☆</button>
         <div class="tool-icon">🏢</div>
         <div class="tool-name">DCF 估值计算器</div>
         <div class="tool-desc">自由现金流、增长率、折现率，估算企业价值。</div>

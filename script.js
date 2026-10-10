@@ -30,7 +30,7 @@ const wsCards = {
   ],
   pro: [
     { icon:'📜', title:'债券定价', desc:'价格、久期、凸性', calc:'bond' },
-    { icon:'📉', title:'期权盈亏', desc:'到期盈亏图', action:'alert' },
+    { icon:'📉', title:'期权盈亏', desc:'到期盈亏图', calc:'option' },
     { icon:'🏢', title:'DCF 估值', desc:'企业价值估算', action:'alert' },
     { icon:'⚠️', title:'风险指标', desc:'夏普、回撤、波动率', action:'alert' },
     { icon:'📤', title:'数据导出', desc:'批量计算与 CSV 导出', action:'alert' },
@@ -346,7 +346,7 @@ const calcConfig = {
       <div class="form-group"><label>初始本金（元）</label><input type="number" id="c_pv" value="100000" /></div>
       <div class="form-group"><label>年利率（%）</label><input type="number" id="c_r" value="8" step="0.1" /></div>
       <div class="form-group"><label>投资年限（年）</label><input type="number" id="c_t" value="10" /></div>
-           <div class="form-group"><label>复利频率</label>
+      <div class="form-group"><label>复利频率</label>
         <select id="c_n">
           <option value="1">每年</option>
           <option value="2">每半年</option>
@@ -372,7 +372,7 @@ const calcConfig = {
       <div class="form-group"><label>贷款金额（元）</label><input type="number" id="l_p" value="1000000" /></div>
       <div class="form-group"><label>年利率（%）</label><input type="number" id="l_r" value="4.2" step="0.01" /></div>
       <div class="form-group"><label>贷款年限（年）</label><input type="number" id="l_t" value="30" /></div>
-           <div class="form-group"><label>还款方式</label>
+      <div class="form-group"><label>还款方式</label>
         <select id="l_type">
           <option value="equal">等额本息</option>
           <option value="principal">等额本金</option>
@@ -394,7 +394,7 @@ const calcConfig = {
     form: `
       <div class="form-group"><label>每月投入（元）</label><input type="number" id="d_pmt" value="3000" /></div>
       <div class="form-group"><label>预期年化收益（%）</label><input type="number" id="d_r" value="8" step="0.1" /></div>
-           <div class="form-group"><label>定投年限（年）</label><input type="number" id="d_t" value="10" /></div>
+      <div class="form-group"><label>定投年限（年）</label><input type="number" id="d_t" value="10" /></div>
       <div class="preset-row">
         <span class="preset-label">预设：</span>
         <button class="preset-btn" onclick="applyPreset('dca','conservative')">🛡️ 保守 4%</button>
@@ -419,6 +419,35 @@ const calcConfig = {
       <button class="calc-btn" onclick="calcBond()">计算价格</button>
     `,
     run: calcBond
+  },
+  option: {
+    title: '期权盈亏计算器',
+    sub: '输入标的价、行权价、权利金与方向，绘制到期盈亏曲线。',
+    form: `
+      <div class="form-group"><label>标的资产现价（元）</label><input type="number" id="o_s" value="100" step="0.1" /></div>
+      <div class="form-group"><label>行权价（元）</label><input type="number" id="o_k" value="105" step="0.1" /></div>
+      <div class="form-group"><label>权利金（元/份）</label><input type="number" id="o_p" value="3" step="0.1" /></div>
+      <div class="form-group"><label>合约数量（份）</label><input type="number" id="o_q" value="1" /></div>
+      <div class="form-group"><label>期权类型</label>
+        <select id="o_type">
+          <option value="call">看涨期权（Call）</option>
+          <option value="put">看跌期权（Put）</option>
+        </select>
+      </div>
+      <div class="form-group"><label>持仓方向</label>
+        <select id="o_pos">
+          <option value="long">买入（Long）</option>
+          <option value="short">卖出（Short）</option>
+        </select>
+      </div>
+      <div class="preset-row">
+        <span class="preset-label">快速示例：</span>
+        <button class="preset-btn" onclick="applyPreset('option','longCall')">📈 买入看涨</button>
+        <button class="preset-btn" onclick="applyPreset('option','shortPut')">📉 卖出看跌</button>
+      </div>
+      <button class="calc-btn" onclick="calcOption()">计算盈亏</button>
+    `,
+    run: calcOption
   }
 };
 
@@ -644,6 +673,128 @@ function calcBond() {
   renderHistory();
 }
 
+function calcOption() {
+  const S = +document.getElementById('o_s').value;
+  const K = +document.getElementById('o_k').value;
+  const P = +document.getElementById('o_p').value;
+  const Q = +document.getElementById('o_q').value;
+  const type = document.getElementById('o_type').value;
+  const pos = document.getElementById('o_pos').value;
+
+  const dir = pos === 'long' ? 1 : -1;
+
+  function payoff(ST) {
+    let intrinsic = 0;
+    if (type === 'call') intrinsic = Math.max(ST - K, 0);
+    else intrinsic = Math.max(K - ST, 0);
+    return dir * (intrinsic - P) * Q * 100;
+  }
+
+  const sMin = 0;
+  const sMax = Math.max(K * 2, S * 1.5);
+  const steps = 40;
+  const chartData = [];
+  for (let i = 0; i <= steps; i++) {
+    const st = sMin + (sMax - sMin) * i / steps;
+    chartData.push(payoff(st));
+  }
+
+  const maxProfit = Math.max(...chartData);
+  const maxLoss = Math.min(...chartData);
+  const breakeven = type === 'call'
+    ? K + (dir === 1 ? P : -P) / (dir === 1 ? 1 : -1)
+    : K - (dir === 1 ? P : -P) / (dir === 1 ? 1 : -1);
+
+  let breakevenText = '';
+  if (type === 'call') {
+    breakevenText = pos === 'long' ? (K + P).toFixed(2) : (K + P).toFixed(2);
+  } else {
+    breakevenText = pos === 'long' ? (K - P).toFixed(2) : (K - P).toFixed(2);
+  }
+
+  const profitText = pos === 'long'
+    ? (type === 'call' ? '无限' : `¥${((K - P) * Q * 100).toFixed(2)}`)
+    : `¥${(P * Q * 100).toFixed(2)}`;
+  const lossText = pos === 'long'
+    ? `¥${(P * Q * 100).toFixed(2)}`
+    : (type === 'call' ? '无限' : `¥${((K - P) * Q * 100).toFixed(2)}`);
+
+  document.getElementById('calcResult').innerHTML = `
+    <div class="result-cards">
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">最大盈利</div><div class="rc-value">${profitText}</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">最大亏损</div><div class="rc-value">${lossText}</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">盈亏平衡点</div><div class="rc-value">¥${breakevenText}</div></div>
+    </div>
+    <div class="result-chart-box">
+      <h3 style="font-size:14px;margin-bottom:10px;">到期盈亏曲线</h3>
+      <canvas id="resultChartOption" height="200"></canvas>
+    </div>
+    <div id="calcHistory"></div>
+  `;
+  drawOptionChart('resultChartOption', chartData, sMin, sMax, K);
+  saveHistory({
+    type: 'option',
+    title: (type === 'call' ? '看涨' : '看跌') + ' · ' + (pos === 'long' ? '买入' : '卖出'),
+    summary: `行权价 ${K} · 权利金 ${P} · 平衡点 ¥${breakevenText}`
+  });
+  renderHistory();
+}
+
+function drawOptionChart(canvasId, data, sMin, sMax, K) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth || 500;
+  const H = canvas.height = 200;
+  const pad = { l: 55, r: 20, t: 20, b: 28 };
+  const max = Math.max(...data, 0) * 1.1;
+  const min = Math.min(...data, 0) * 1.1;
+  const range = max - min || 1;
+  ctx.clearRect(0, 0, W, H);
+
+  // Y 轴网格
+  ctx.strokeStyle = '#243049'; ctx.lineWidth = 1;
+  ctx.fillStyle = '#8fa3c8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (H - pad.t - pad.b) * i / 4;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    const val = max - range * i / 4;
+    ctx.fillText(formatShort(val), pad.l - 6, y + 3);
+  }
+
+  // 零轴
+  const y0 = H - pad.b - (H - pad.t - pad.b) * (0 - min) / range;
+  ctx.strokeStyle = '#8fa3c8'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, y0); ctx.lineTo(W - pad.r, y0); ctx.stroke();
+
+  // 折线
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = pad.l + (W - pad.l - pad.r) * i / (data.length - 1);
+    const y = H - pad.b - (H - pad.t - pad.b) * (v - min) / range;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#f5b942'; ctx.lineWidth = 2.5; ctx.stroke();
+
+  // 行权价竖线
+  const xK = pad.l + (W - pad.l - pad.r) * (K - sMin) / (sMax - sMin);
+  if (xK > pad.l && xK < W - pad.r) {
+    ctx.strokeStyle = '#2ee6d6'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xK, pad.t); ctx.lineTo(xK, H - pad.b); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#2ee6d6'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('行权价 ' + K, xK, pad.t - 4);
+  }
+
+  // 图例
+  ctx.fillStyle = '#f5b942';
+  ctx.fillRect(pad.l, 4, 10, 3);
+  ctx.fillStyle = '#8fa3c8';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('到期盈亏', pad.l + 14, 8);
+}
+
 /* ============ 事件初始化 ============ */
 function initEvents() {
   const roleSelector = document.getElementById('roleSelector');
@@ -682,7 +833,7 @@ const searchIndex = [
   { icon:'🏠', name:'房贷计算器',      tag:'工具', action:() => goCalc('loan') },
   { icon:'📊', name:'定投计算器',      tag:'工具', action:() => goCalc('dca') },
   { icon:'📜', name:'债券定价计算器',  tag:'工具', action:() => goCalc('bond') },
-  { icon:'📉', name:'期权盈亏计算器',  tag:'即将上线', action:() => alert('期权盈亏计算器开发中，敬请期待！') },
+  { icon:'📉', name:'期权盈亏计算器',  tag:'工具', action:() => goCalc('option') },
   { icon:'🏢', name:'DCF 估值计算器',  tag:'即将上线', action:() => alert('DCF 估值器开发中，敬请期待！') },
   { icon:'📈', name:'市场数据看板',    tag:'数据', action:() => scrollToSection('data') },
   { icon:'📚', name:'金融知识学习中心', tag:'学习', action:() => scrollToSection('learn') },
@@ -909,6 +1060,10 @@ const PRESETS = {
     first:      { l_r: 3.1 },
     second:     { l_r: 3.5 },
     commercial: { l_r: 4.2 }
+  },
+  option: {
+    longCall:  { o_type: 'call', o_pos: 'long' },
+    shortPut:  { o_type: 'put',  o_pos: 'short' }
   }
 };
 
@@ -922,6 +1077,7 @@ function applyPreset(calcKey, presetKey) {
   if (calcKey === 'compound') calcCompound();
   else if (calcKey === 'dca') calcDCA();
   else if (calcKey === 'loan') calcLoan();
+  else if (calcKey === 'option') calcOption();
 }
 
 
@@ -1004,7 +1160,6 @@ const ARTICLES = {
 function openArticle(key) {
   const art = ARTICLES[key];
   if (!art) return;
-  // 如果已有旧弹窗先移除
   const old = document.getElementById('articleModal');
   if (old) old.remove();
 
@@ -1066,7 +1221,6 @@ function applyFavorites() {
   const favs = getFavorites();
   const cards = Array.from(grid.querySelectorAll('.tool-card'));
 
-  // 更新每张卡片的星标状态
   cards.forEach(card => {
     const id = card.dataset.tool;
     const btn = card.querySelector('.fav-btn');
@@ -1080,7 +1234,6 @@ function applyFavorites() {
     }
   });
 
-  // 重新排序：收藏的排前面，其余保持原顺序
   const sorted = cards.slice().sort((a, b) => {
     const aFav = favs.includes(a.dataset.tool) ? 0 : 1;
     const bFav = favs.includes(b.dataset.tool) ? 0 : 1;

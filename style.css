@@ -832,3 +832,39 @@ footer {
   border-color: var(--green);
   color: #fff;
 }
+
+/* ===== DCF 敏感性热力图 ===== */
+.heatmap-wrap {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.heatmap-title {
+  font-size: 14px;
+  margin-bottom: 14px;
+  color: var(--gold);
+}
+.heatmap {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  font-size: 12px;
+}
+.heatmap-cell {
+  padding: 10px 4px;
+  text-align: center;
+  border-radius: 6px;
+  color: #fff;
+  font-weight: 700;
+  transition: transform .15s;
+}
+.heatmap-cell:hover {
+  transform: scale(1.08);
+  z-index: 1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.heatmap-head {
+  background: var(--bg3);
+  color: var(--text2);
+  font-weight: 700;
+}

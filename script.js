@@ -403,6 +403,12 @@ const calcConfig = {
           <option value="principal">等额本金</option>
         </select>
       </div>
+      <div class="form-group"><label>提前还款金额（元，可选）</label>
+        <input type="number" id="l_prepay" value="0" />
+      </div>
+      <div class="form-group"><label>提前还款在第几年</label>
+        <input type="number" id="l_prepay_year" value="5" />
+      </div>
       <div class="preset-row">
         <span class="preset-label">预设利率：</span>
         <button class="preset-btn" onclick="applyPreset('loan','first')">🏠 首套 3.1%</button>
@@ -656,11 +662,60 @@ function calcLoan() {
     totalInterest = (firstMonth + lastMonth) * n / 2 - P;
   }
 
+  // ===== 提前还款模拟 =====
+  const prepay = +document.getElementById('l_prepay').value || 0;
+  const prepayYear = +document.getElementById('l_prepay_year').value || 5;
+  const totalYears = +document.getElementById('l_t').value;
+  const prepayValid = prepay > 0 && prepayYear <= totalYears;
+  let savedInterest = 0;
+
+  if (prepayValid) {
+    let balance = P;
+    let paidInterest = 0;
+    const prepayMonth = prepayYear * 12;
+    for (let i = 1; i <= n; i++) {
+      const interest = balance * r;
+      let principal = 0;
+      if (type === 'equal') {
+        principal = monthly - interest;
+      } else {
+        principal = P / n;
+      }
+      balance -= principal;
+      paidInterest += interest;
+      if (i === prepayMonth) {
+        balance -= prepay;
+        if (balance < 0) balance = 0;
+      }
+      if (balance <= 0) break;
+    }
+
+    if (balance > 0) {
+      const remainMonths = n - prepayMonth;
+      if (remainMonths > 0 && r > 0) {
+        const newMonthly = balance * r * Math.pow(1 + r, remainMonths) / (Math.pow(1 + r, remainMonths) - 1);
+        const newTotalInterest = paidInterest + newMonthly * remainMonths - balance;
+        savedInterest = totalInterest - newTotalInterest;
+      } else {
+        savedInterest = totalInterest - paidInterest;
+      }
+    } else {
+      savedInterest = totalInterest - paidInterest;
+    }
+  }
+
   document.getElementById('calcResult').innerHTML = `
     <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">${type==='equal'?'每月月供':'首月月供'}</div><div class="rc-value">¥${monthly.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">总利息</div><div class="rc-value">¥${totalInterest.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">还款总额</div><div class="rc-value">¥${(P+totalInterest).toFixed(2)}</div></div>
+      ${prepayValid ? `
+        <div class="result-card">
+          <button class="rc-copy" onclick="copyCard(this)">📋</button>
+          <div class="rc-label">提前还款节省利息</div>
+          <div class="rc-value">¥${savedInterest.toFixed(2)}</div>
+        </div>
+      ` : ''}
     </div>
     <div class="summary-row">
       <button class="copy-summary" onclick="copySummary('loan', this)">📄 复制摘要</button>
@@ -762,14 +817,21 @@ function calcBond() {
   }
   convexity = convexity / (price * Math.pow(1 + yPeriod, 2) * n * n);
 
+  // DV01：YTM 每变动 1bp，价格变化
+  const dv01 = modified * price * 0.0001;
+
   document.getElementById('calcResult').innerHTML = `
     <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">债券价格</div><div class="rc-value">¥${price.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">修正久期</div><div class="rc-value">${modified.toFixed(2)} 年</div></div>
-      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">凸性</div><div class="rc-value">${convexity.toFixed(2)}</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">DV01</div><div class="rc-value">¥${dv01.toFixed(4)}</div></div>
     </div>
     <div class="summary-row">
       <button class="copy-summary" onclick="copySummary('bond', this)">📄 复制摘要</button>
+    </div>
+    <div class="result-chart-box">
+      <h3 style="font-size:14px;margin-bottom:10px;">价格-收益率曲线</h3>
+      <canvas id="resultChartBond" height="200"></canvas>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
       <h3 style="font-size:14px;margin:0;">关键指标</h3>
@@ -782,11 +844,13 @@ function calcBond() {
         <tr><td>麦考利久期</td><td>${macaulay.toFixed(2)} 年</td></tr>
         <tr><td>修正久期</td><td>${modified.toFixed(2)}</td></tr>
         <tr><td>凸性</td><td>${convexity.toFixed(2)}</td></tr>
+        <tr><td>DV01（1bp）</td><td>¥${dv01.toFixed(4)}</td></tr>
         <tr><td>付息期数</td><td>${periods} 期</td></tr>
       </tbody>
     </table>
     <div id="calcHistory"></div>
   `;
+  drawBondChart('resultChartBond', F, c, y, t, n);
   saveHistory({
     type: 'bond',
     title: '债券 · 面值 ¥' + F.toLocaleString(),
@@ -794,6 +858,83 @@ function calcBond() {
   });
   renderHistory();
 }
+function drawBondChart(canvasId, F, c, y, t, n) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth || 500;
+  const H = canvas.height = 200;
+  const pad = { l: 55, r: 20, t: 20, b: 28 };
+
+  // 生成价格-收益率曲线：YTM 从 0.5y 到 1.5y
+  const periods = t * n;
+  const coupon = F * c / n;
+  const yMin = Math.max(y * 0.3, 0.001);
+  const yMax = y * 1.8;
+  const steps = 50;
+  const points = [];
+  for (let i = 0; i <= steps; i++) {
+    const yy = yMin + (yMax - yMin) * i / steps;
+    const yP = yy / n;
+    let p = 0;
+    for (let k = 1; k <= periods; k++) {
+      const cf = coupon + (k === periods ? F : 0);
+      p += cf / Math.pow(1 + yP, k);
+    }
+    points.push({ y: yy, p });
+  }
+
+  const prices = points.map(pt => pt.p);
+  const maxP = Math.max(...prices) * 1.05;
+  const minP = Math.min(...prices) * 0.95;
+  const range = maxP - minP || 1;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#243049'; ctx.lineWidth = 1;
+  ctx.fillStyle = '#8fa3c8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const yy = pad.t + (H - pad.t - pad.b) * i / 4;
+    ctx.beginPath(); ctx.moveTo(pad.l, yy); ctx.lineTo(W - pad.r, yy); ctx.stroke();
+    const val = maxP - range * i / 4;
+    ctx.fillText(val.toFixed(1), pad.l - 6, yy + 3);
+  }
+
+  // 画曲线
+  ctx.beginPath();
+  points.forEach((pt, i) => {
+    const x = pad.l + (W - pad.l - pad.r) * (pt.y - yMin) / (yMax - yMin);
+    const yy = H - pad.b - (H - pad.t - pad.b) * (pt.p - minP) / range;
+    i === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+  });
+  ctx.strokeStyle = '#f5b942'; ctx.lineWidth = 2.2; ctx.stroke();
+
+  // 标注当前 YTM 点
+  const curX = pad.l + (W - pad.l - pad.r) * (y - yMin) / (yMax - yMin);
+  let curP = 0;
+  const yP = y / n;
+  for (let k = 1; k <= periods; k++) {
+    const cf = coupon + (k === periods ? F : 0);
+    curP += cf / Math.pow(1 + yP, k);
+  }
+  const curY = H - pad.b - (H - pad.t - pad.b) * (curP - minP) / range;
+  if (curX > pad.l && curX < W - pad.r) {
+    ctx.strokeStyle = '#2ee6d6'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(curX, pad.t); ctx.lineTo(curX, H - pad.b); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(curX, curY, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#2ee6d6'; ctx.fill();
+    ctx.fillStyle = '#2ee6d6'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('当前 YTM ' + (y * 100).toFixed(2) + '%', curX, pad.t - 4);
+  }
+
+  ctx.fillStyle = '#f5b942';
+  ctx.fillRect(pad.l, 4, 10, 3);
+  ctx.fillStyle = '#8fa3c8';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('债券价格', pad.l + 14, 8);
+}
+
 function calcOption() {
   const S = +document.getElementById('o_s').value;
   const K = +document.getElementById('o_k').value;
@@ -1149,10 +1290,7 @@ function init() {
   initSearch();
 }
 
-window.addEventListener('DOMContentLoaded', init);
-
-
-/* ============ 主题切换 ============ */
+window.addEventListener('DOMContentLoaded', init);/* ============ 主题切换 ============ */
 const THEME_KEY = 'fincalc_theme';
 
 function applyTheme(theme) {
@@ -1260,8 +1398,6 @@ function exportTableCSV(btn) {
     btn.classList.remove('exported');
   }, 1500);
 }
-
-
 /* ============ 复制结果摘要 ============ */
 const SITE_URL = 'https://ni-97e.pages.dev';
 
@@ -1304,7 +1440,7 @@ function copySummary(calcKey, btn) {
            `票息率：${c}% · YTM：${y}% · ${t} 年\n` +
            `债券价格：${cards[0] ? cards[0].textContent : ''}\n` +
            `修正久期：${cards[1] ? cards[1].textContent : ''}\n` +
-           `凸性：${cards[2] ? cards[2].textContent : ''}`;
+           `DV01：${cards[2] ? cards[2].textContent : ''}`;
   } else if (calcKey === 'option') {
     const S = +g('o_s'), K = +g('o_k'), P = +g('o_p');
     const type = g('o_type') === 'call' ? '看涨' : '看跌';
@@ -1401,8 +1537,6 @@ function applyPreset(calcKey, presetKey) {
   else if (calcKey === 'option') calcOption();
   else if (calcKey === 'dcf') calcDcf();
 }
-
-
 /* ============ 文章内容（弹窗显示） ============ */
 const ARTICLES = {
   tvm: {

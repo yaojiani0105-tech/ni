@@ -614,6 +614,11 @@ function calcCompound() {
       <tbody>${rows}</tbody>
     </table>
     <div id="calcHistory"></div>
+    ${renderFormulaPanel([
+      { label: '复利终值公式', formula: 'FV = PV × (1 + r/n)^(n×t)' },
+      { label: '代入数值', formula: `FV = ${pv} × (1 + ${r}/${n})^(${n}×${t})` },
+      { label: '计算结果', formula: `FV = ${fv.toFixed(2)}`, result: `¥${fv.toFixed(2)}` }
+    ])}
   `;
   drawResultChart('resultChartCompound', [
     { name: '名义价值', data: chartNominal },
@@ -728,7 +733,18 @@ function calcLoan() {
       <thead><tr><th>期数</th><th>月供</th><th>本金</th><th>利息</th><th>剩余本金</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div id="calcHistory"></div>
+      <div id="calcHistory"></div>
+    ${renderFormulaPanel([
+      { label: type === 'equal' ? '等额本息月供公式' : '等额本金月供公式',
+        formula: type === 'equal'
+          ? 'M = P × r × (1+r)^n / [(1+r)^n - 1]'
+          : 'M = P/n + 剩余本金 × r' },
+      { label: '代入数值',
+        formula: type === 'equal'
+          ? `M = ${P} × ${r.toFixed(6)} × (1+${r.toFixed(6)})^${n} / [(1+${r.toFixed(6)})^${n} - 1]`
+          : `M₁ = ${P}/${n} + ${P} × ${r.toFixed(6)}` },
+      { label: '月供结果', formula: `M = ${monthly.toFixed(2)}`, result: `¥${monthly.toFixed(2)}` }
+    ])}
   `;
   saveHistory({
     type: 'loan',
@@ -777,7 +793,12 @@ function calcDCA() {
       <thead><tr><th>年份</th><th>累计本金</th><th>账户价值</th><th>累计收益</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <div id="calcHistory"></div>
+      <div id="calcHistory"></div>
+    ${renderFormulaPanel([
+      { label: '定投终值公式', formula: 'FV = PMT × [((1+r)^n - 1) / r]' },
+      { label: '代入数值', formula: `FV = ${pmt} × [((1+${r.toFixed(6)})^${n} - 1) / ${r.toFixed(6)}]` },
+      { label: '计算结果', formula: `FV = ${fv.toFixed(2)}`, result: `¥${fv.toFixed(2)}` }
+    ])}
   `;
   drawResultChart('resultChartDCA', [
     { name: '累计投入', data: chartPrincipal },
@@ -848,7 +869,12 @@ function calcBond() {
         <tr><td>付息期数</td><td>${periods} 期</td></tr>
       </tbody>
     </table>
-    <div id="calcHistory"></div>
+      <div id="calcHistory"></div>
+    ${renderFormulaPanel([
+      { label: '债券定价公式', formula: 'P = Σ C/(1+y)^t + F/(1+y)^n' },
+      { label: '代入数值', formula: `P = Σ ${coupon.toFixed(2)}/(1+${yPeriod.toFixed(6)})^t + ${F}/(1+${yPeriod.toFixed(6)})^${periods}` },
+      { label: '债券价格', formula: `P = ${price.toFixed(2)}`, result: `¥${price.toFixed(2)}` }
+    ])}
   `;
   drawBondChart('resultChartBond', F, c, y, t, n);
   saveHistory({
@@ -1747,4 +1773,20 @@ function renderHeatmap(baseCF, g, n) {
   });
   html += '</div></div>';
   return html;
+}
+
+/* ============ 公式推导面板 ============ */
+function renderFormulaPanel(steps) {
+  return `
+    <div class="formula-panel">
+      <h3 class="formula-panel-title">📐 公式推导</h3>
+      ${steps.map(s => `
+        <div class="formula-step">
+          <div class="fs-label">${s.label}</div>
+          <div class="fs-formula">${s.formula}</div>
+          ${s.result ? `<div class="fs-result">= ${s.result}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
 }

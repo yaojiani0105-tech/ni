@@ -868,3 +868,41 @@ footer {
   color: var(--text2);
   font-weight: 700;
 }
+/* ===== 公式推导面板 ===== */
+.formula-panel {
+  margin-top: 22px;
+  padding: 16px;
+  background: var(--bg3);
+  border-radius: 10px;
+  border-left: 3px solid var(--gold);
+}
+.formula-panel-title {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--gold);
+}
+.formula-step {
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--border);
+}
+.formula-step:last-child {
+  border-bottom: none;
+}
+.formula-step .fs-label {
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 4px;
+}
+.formula-step .fs-formula {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: var(--gold);
+  word-break: break-all;
+  line-height: 1.5;
+}
+.formula-step .fs-result {
+  font-size: 13px;
+  color: var(--cyan);
+  font-weight: 700;
+  margin-top: 2px;
+}

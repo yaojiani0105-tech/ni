@@ -788,3 +788,32 @@ footer {
   border-color: var(--gold);
   color: var(--gold);
 }
+
+
+/* ===== 复制摘要按钮 ===== */
+.summary-row {
+  margin: 10px 0 4px;
+  display: flex;
+  justify-content: flex-end;
+}
+.copy-summary {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+}
+.copy-summary:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: translateY(-1px);
+}
+.copy-summary.copied {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}

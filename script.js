@@ -478,8 +478,46 @@ function goCalc(key) {
   document.getElementById('calcForm').innerHTML = cfg.form;
   document.getElementById('calcResult').innerHTML = '<p style="color:var(--text2);font-size:14px;">填写左侧参数后点击计算，结果将显示在这里。</p>';
   goPage('calc');
+  // 恢复上次参数
+  restoreParams(key);
+  // 绑定自动保存
+  bindParamAutoSave(key);
   setTimeout(() => cfg.run(), 50);
   setTimeout(renderHistory, 60);
+}
+
+/* ============ 参数记忆（localStorage） ============ */
+const PARAMS_KEY = 'fincalc_params';
+
+function getAllParams() {
+  try { return JSON.parse(localStorage.getItem(PARAMS_KEY) || '{}'); } catch (e) { return {}; }
+}
+
+function saveParam(calcKey, id, value) {
+  const all = getAllParams();
+  if (!all[calcKey]) all[calcKey] = {};
+  all[calcKey][id] = value;
+  localStorage.setItem(PARAMS_KEY, JSON.stringify(all));
+}
+
+function restoreParams(calcKey) {
+  const all = getAllParams();
+  const saved = all[calcKey];
+  if (!saved) return;
+  Object.entries(saved).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+}
+
+function bindParamAutoSave(calcKey) {
+  const form = document.getElementById('calcForm');
+  if (!form) return;
+  form.querySelectorAll('input, select').forEach(el => {
+    if (!el.id) return;
+    el.addEventListener('input', () => saveParam(calcKey, el.id, el.value));
+    el.addEventListener('change', () => saveParam(calcKey, el.id, el.value));
+  });
 }
 
 /* ============ 各计算器 ============ */
@@ -502,6 +540,9 @@ function calcCompound() {
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">期末终值</div><div class="rc-value">¥${fv.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">利息总额</div><div class="rc-value">¥${interest.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">本金翻倍</div><div class="rc-value">${(fv/pv).toFixed(2)} 倍</div></div>
+    </div>
+    <div class="summary-row">
+      <button class="copy-summary" onclick="copySummary('compound', this)">📄 复制摘要</button>
     </div>
     <div class="result-chart-box">
       <h3 style="font-size:14px;margin-bottom:10px;">资产增长曲线</h3>
@@ -567,6 +608,8 @@ function calcLoan() {
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">${type==='equal'?'每月月供':'首月月供'}</div><div class="rc-value">¥${monthly.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">总利息</div><div class="rc-value">¥${totalInterest.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">还款总额</div><div class="rc-value">¥${(P+totalInterest).toFixed(2)}</div></div>
+    </div>    <div class="summary-row">
+      <button class="copy-summary" onclick="copySummary('loan', this)">📄 复制摘要</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
       <h3 style="font-size:14px;margin:0;">还款计划（部分）</h3>
@@ -605,10 +648,13 @@ function calcDCA() {
   const totalPrincipal = pmt * n;
   const profit = fv - totalPrincipal;
   document.getElementById('calcResult').innerHTML = `
-    <div class="result-cards">
+        <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">期末终值</div><div class="rc-value">¥${fv.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">投入本金</div><div class="rc-value">¥${totalPrincipal.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">累计收益</div><div class="rc-value">¥${profit.toFixed(2)}</div></div>
+    </div>
+    <div class="summary-row">
+      <button class="copy-summary" onclick="copySummary('dca', this)">📄 复制摘要</button>
     </div>
     <div class="result-chart-box">
       <h3 style="font-size:14px;margin-bottom:10px;">本金 vs 账户价值</h3>
@@ -663,10 +709,13 @@ function calcBond() {
   convexity = convexity / (price * Math.pow(1 + yPeriod, 2) * n * n);
 
   document.getElementById('calcResult').innerHTML = `
-    <div class="result-cards">
+        <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">债券价格</div><div class="rc-value">¥${price.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">修正久期</div><div class="rc-value">${modified.toFixed(2)} 年</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">凸性</div><div class="rc-value">${convexity.toFixed(2)}</div></div>
+    </div>
+    <div class="summary-row">
+      <button class="copy-summary" onclick="copySummary('bond', this)">📄 复制摘要</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
       <h3 style="font-size:14px;margin:0;">关键指标</h3>
@@ -728,10 +777,13 @@ function calcOption() {
     : (type === 'call' ? '无限' : `¥${((K - P) * Q * 100).toFixed(2)}`);
 
   document.getElementById('calcResult').innerHTML = `
-    <div class="result-cards">
+        <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">最大盈利</div><div class="rc-value">${profitText}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">最大亏损</div><div class="rc-value">${lossText}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">盈亏平衡点</div><div class="rc-value">¥${breakevenText}</div></div>
+    </div>
+    <div class="summary-row">
+      <button class="copy-summary" onclick="copySummary('option', this)">📄 复制摘要</button>
     </div>
     <div class="result-chart-box">
       <h3 style="font-size:14px;margin-bottom:10px;">到期盈亏曲线</h3>
@@ -828,10 +880,13 @@ function calcDcf() {
   const enterpriseValue = pvSum + terminalPV;
 
   document.getElementById('calcResult').innerHTML = `
-    <div class="result-cards">
+       <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">预测期现值</div><div class="rc-value">¥${pvSum.toFixed(2)} 万</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">永续价值现值</div><div class="rc-value">¥${terminalPV.toFixed(2)} 万</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">企业总价值</div><div class="rc-value">¥${enterpriseValue.toFixed(2)} 万</div></div>
+    </div>
+    <div class="summary-row">
+      <button class="copy-summary" onclick="copySummary('dcf', this)">📄 复制摘要</button>
     </div>
     <div class="result-chart-box">
       <h3 style="font-size:14px;margin-bottom:10px;">自由现金流预测</h3>
@@ -1155,6 +1210,102 @@ function exportTableCSV(btn) {
 
 
 /* ============ 计算器预设方案 ============ */
+/* ============ 复制结果摘要 ============ */
+const SITE_URL = 'https://ni-97e.pages.dev';
+
+function copySummary(calcKey, btn) {
+  let text = '';
+  const g = (id) => (document.getElementById(id) || {}).value || '';
+
+  if (calcKey === 'compound') {
+    const pv = +g('c_pv'), r = +g('c_r'), t = +g('c_t');
+    const cards = document.querySelectorAll('.result-card .rc-value');
+    text = `【复利计算器 · FinCalc Pro】\n` +
+           `本金：${pv.toLocaleString()} 元\n` +
+           `年利率：${r}% · ${t} 年\n` +
+           `期末终值：${cards[0] ? cards[0].textContent : ''}\n` +
+           `利息总额：${cards[1] ? cards[1].textContent : ''}\n` +
+           `本金翻倍：${cards[2] ? cards[2].textContent : ''}`;
+  } else if (calcKey === 'loan') {
+    const P = +g('l_p'), r = +g('l_r'), t = +g('l_t');
+    const cards = document.querySelectorAll('.result-card .rc-value');
+    text = `【房贷计算器 · FinCalc Pro】\n` +
+           `贷款金额：${P.toLocaleString()} 元\n` +
+           `年利率：${r}% · ${t} 年\n` +
+           `每月月供：${cards[0] ? cards[0].textContent : ''}\n` +
+           `总利息：${cards[1] ? cards[1].textContent : ''}\n` +
+           `还款总额：${cards[2] ? cards[2].textContent : ''}`;
+  } else if (calcKey === 'dca') {
+    const pmt = +g('d_pmt'), r = +g('d_r'), t = +g('d_t');
+    const cards = document.querySelectorAll('.result-card .rc-value');
+    text = `【定投计算器 · FinCalc Pro】\n` +
+           `每月投入：${pmt.toLocaleString()} 元\n` +
+           `年化收益：${r}% · ${t} 年\n` +
+           `期末终值：${cards[0] ? cards[0].textContent : ''}\n` +
+           `投入本金：${cards[1] ? cards[1].textContent : ''}\n` +
+           `累计收益：${cards[2] ? cards[2].textContent : ''}`;
+  } else if (calcKey === 'bond') {
+    const F = +g('b_f'), c = +g('b_c'), y = +g('b_y'), t = +g('b_t');
+    const cards = document.querySelectorAll('.result-card .rc-value');
+    text = `【债券定价计算器 · FinCalc Pro】\n` +
+           `面值：${F.toLocaleString()} 元\n` +
+           `票息率：${c}% · YTM：${y}% · ${t} 年\n` +
+           `债券价格：${cards[0] ? cards[0].textContent : ''}\n` +
+           `修正久期：${cards[1] ? cards[1].textContent : ''}\n` +
+           `凸性：${cards[2] ? cards[2].textContent : ''}`;
+  } else if (calcKey === 'option') {
+    const S = +g('o_s'), K = +g('o_k'), P = +g('o_p');
+    const type = g('o_type') === 'call' ? '看涨' : '看跌';
+    const pos = g('o_pos') === 'long' ? '买入' : '卖出';
+    const cards = document.querySelectorAll('.result-card .rc-value');
+    text = `【期权盈亏计算器 · FinCalc Pro】\n` +
+           `${type}期权 · ${pos}\n` +
+           `标的价：${S} · 行权价：${K} · 权利金：${P}\n` +
+           `最大盈利：${cards[0] ? cards[0].textContent : ''}\n` +
+           `最大亏损：${cards[1] ? cards[1].textContent : ''}\n` +
+           `盈亏平衡点：${cards[2] ? cards[2].textContent : ''}`;
+  } else if (calcKey === 'dcf') {
+    const cf = +g('d_cf'), gr = +g('d_g'), r = +g('d_r'), n = +g('d_n'), tg = +g('d_tg');
+    const cards = document.querySelectorAll('.result-card .rc-value');
+    text = `【DCF 估值计算器 · FinCalc Pro】\n` +
+           `初始 CF：${cf.toLocaleString()} 万 · 增长：${gr}%\n` +
+           `折现率：${r}% · 永续增长：${tg}% · ${n} 年\n` +
+           `预测期现值：${cards[0] ? cards[0].textContent : ''}\n` +
+           `永续价值现值：${cards[1] ? cards[1].textContent : ''}\n` +
+           `企业总价值：${cards[2] ? cards[2].textContent : ''}`;
+  }
+
+  text += `\n———————————\n来自 FinCalc Pro 金融计算器\n${SITE_URL}`;
+
+  const doSuccess = () => {
+    const old = btn.textContent;
+    btn.textContent = '✅ 已复制';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = old;
+      btn.classList.remove('copied');
+    }, 1500);
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(doSuccess).catch(() => {
+      fallbackCopySummary(text, doSuccess);
+    });
+  } else {
+    fallbackCopySummary(text, doSuccess);
+  }
+}
+
+function fallbackCopySummary(text, cb) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); cb(); } catch (e) {}
+  document.body.removeChild(ta);
+}
 const PRESETS = {
   compound: {
     conservative: { c_r: 3 },

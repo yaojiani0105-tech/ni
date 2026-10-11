@@ -31,7 +31,7 @@ const wsCards = {
   pro: [
     { icon:'📜', title:'债券定价', desc:'价格、久期、凸性', calc:'bond' },
     { icon:'📉', title:'期权盈亏', desc:'到期盈亏图', calc:'option' },
-    { icon:'🏢', title:'DCF 估值', desc:'企业价值估算', action:'alert' },
+    { icon:'🏢', title:'DCF 估值', desc:'企业价值估算', calc:'dcf' },
     { icon:'⚠️', title:'风险指标', desc:'夏普、回撤、波动率', action:'alert' },
     { icon:'📤', title:'数据导出', desc:'批量计算与 CSV 导出', action:'alert' },
     { icon:'💰', title:'复利计算', desc:'专业参数设置', calc:'compound' }
@@ -448,6 +448,25 @@ const calcConfig = {
       <button class="calc-btn" onclick="calcOption()">计算盈亏</button>
     `,
     run: calcOption
+  },
+  dcf: {
+    title: 'DCF 估值计算器',
+    sub: '基于自由现金流折现模型，估算企业内在价值。',
+    form: `
+      <div class="form-group"><label>初始自由现金流（万元）</label><input type="number" id="d_cf" value="1000" /></div>
+      <div class="form-group"><label>预测期增长率（%）</label><input type="number" id="d_g" value="10" step="0.1" /></div>
+      <div class="form-group"><label>折现率 / WACC（%）</label><input type="number" id="d_r" value="8" step="0.1" /></div>
+      <div class="form-group"><label>预测年限（年）</label><input type="number" id="d_n" value="5" /></div>
+      <div class="form-group"><label>永续增长率（%）</label><input type="number" id="d_tg" value="3" step="0.1" /></div>
+      <div class="preset-row">
+        <span class="preset-label">预设：</span>
+        <button class="preset-btn" onclick="applyPreset('dcf','conservative')">🛡️ 保守</button>
+        <button class="preset-btn" onclick="applyPreset('dcf','balanced')">⚖️ 稳健</button>
+        <button class="preset-btn" onclick="applyPreset('dcf','growth')">🚀 高成长</button>
+      </div>
+      <button class="calc-btn" onclick="calcDcf()">估算企业价值</button>
+    `,
+    run: calcDcf
   }
 };
 
@@ -699,18 +718,7 @@ function calcOption() {
     chartData.push(payoff(st));
   }
 
-  const maxProfit = Math.max(...chartData);
-  const maxLoss = Math.min(...chartData);
-  const breakeven = type === 'call'
-    ? K + (dir === 1 ? P : -P) / (dir === 1 ? 1 : -1)
-    : K - (dir === 1 ? P : -P) / (dir === 1 ? 1 : -1);
-
-  let breakevenText = '';
-  if (type === 'call') {
-    breakevenText = pos === 'long' ? (K + P).toFixed(2) : (K + P).toFixed(2);
-  } else {
-    breakevenText = pos === 'long' ? (K - P).toFixed(2) : (K - P).toFixed(2);
-  }
+  const breakevenText = type === 'call' ? (K + P).toFixed(2) : (K - P).toFixed(2);
 
   const profitText = pos === 'long'
     ? (type === 'call' ? '无限' : `¥${((K - P) * Q * 100).toFixed(2)}`)
@@ -752,7 +760,6 @@ function drawOptionChart(canvasId, data, sMin, sMax, K) {
   const range = max - min || 1;
   ctx.clearRect(0, 0, W, H);
 
-  // Y 轴网格
   ctx.strokeStyle = '#243049'; ctx.lineWidth = 1;
   ctx.fillStyle = '#8fa3c8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
   for (let i = 0; i <= 4; i++) {
@@ -762,12 +769,10 @@ function drawOptionChart(canvasId, data, sMin, sMax, K) {
     ctx.fillText(formatShort(val), pad.l - 6, y + 3);
   }
 
-  // 零轴
   const y0 = H - pad.b - (H - pad.t - pad.b) * (0 - min) / range;
   ctx.strokeStyle = '#8fa3c8'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(pad.l, y0); ctx.lineTo(W - pad.r, y0); ctx.stroke();
 
-  // 折线
   ctx.beginPath();
   data.forEach((v, i) => {
     const x = pad.l + (W - pad.l - pad.r) * i / (data.length - 1);
@@ -776,7 +781,6 @@ function drawOptionChart(canvasId, data, sMin, sMax, K) {
   });
   ctx.strokeStyle = '#f5b942'; ctx.lineWidth = 2.5; ctx.stroke();
 
-  // 行权价竖线
   const xK = pad.l + (W - pad.l - pad.r) * (K - sMin) / (sMax - sMin);
   if (xK > pad.l && xK < W - pad.r) {
     ctx.strokeStyle = '#2ee6d6'; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
@@ -786,13 +790,119 @@ function drawOptionChart(canvasId, data, sMin, sMax, K) {
     ctx.fillText('行权价 ' + K, xK, pad.t - 4);
   }
 
-  // 图例
   ctx.fillStyle = '#f5b942';
   ctx.fillRect(pad.l, 4, 10, 3);
   ctx.fillStyle = '#8fa3c8';
   ctx.font = '11px sans-serif';
   ctx.textAlign = 'left';
   ctx.fillText('到期盈亏', pad.l + 14, 8);
+}
+
+function calcDcf() {
+  const cf0 = +document.getElementById('d_cf').value;
+  const g = +document.getElementById('d_g').value / 100;
+  const r = +document.getElementById('d_r').value / 100;
+  const n = +document.getElementById('d_n').value;
+  const tg = +document.getElementById('d_tg').value / 100;
+
+  if (r <= tg) { alert('折现率必须大于永续增长率，否则永续价值无穷大'); return; }
+
+  let rows = '';
+  let pvSum = 0;
+  const chartLabels = ['初始'];
+  const chartValues = [cf0];
+
+  let cf = cf0;
+  for (let y = 1; y <= n; y++) {
+    cf = cf * (1 + g);
+    const pv = cf / Math.pow(1 + r, y);
+    pvSum += pv;
+    chartLabels.push('第 ' + y + ' 年');
+    chartValues.push(cf);
+    rows += `<tr><td>第 ${y} 年</td><td>${cf.toFixed(2)}</td><td>${pv.toFixed(2)}</td><td>${pvSum.toFixed(2)}</td></tr>`;
+  }
+
+  const terminalCF = cf * (1 + tg);
+  const terminalValue = terminalCF / (r - tg);
+  const terminalPV = terminalValue / Math.pow(1 + r, n);
+  const enterpriseValue = pvSum + terminalPV;
+
+  document.getElementById('calcResult').innerHTML = `
+    <div class="result-cards">
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">预测期现值</div><div class="rc-value">¥${pvSum.toFixed(2)} 万</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">永续价值现值</div><div class="rc-value">¥${terminalPV.toFixed(2)} 万</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">企业总价值</div><div class="rc-value">¥${enterpriseValue.toFixed(2)} 万</div></div>
+    </div>
+    <div class="result-chart-box">
+      <h3 style="font-size:14px;margin-bottom:10px;">自由现金流预测</h3>
+      <canvas id="resultChartDcf" height="200"></canvas>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
+      <h3 style="font-size:14px;margin:0;">逐年明细</h3>
+      <button class="export-csv" onclick="exportTableCSV(this)">📥 导出 CSV</button>
+    </div>
+    <table class="result-table">
+      <thead><tr><th>年份</th><th>自由现金流</th><th>折现现值</th><th>累计现值</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div id="calcHistory"></div>
+  `;
+  drawDcfChart('resultChartDcf', chartLabels, chartValues);
+  saveHistory({
+    type: 'dcf',
+    title: 'DCF · 初始 CF ¥' + cf0 + '万',
+    summary: `增长 ${(+document.getElementById('d_g').value).toFixed(1)}% · 折现 ${(+document.getElementById('d_r').value).toFixed(1)}% · ${n} 年 → 估值 ¥${enterpriseValue.toFixed(0)} 万`
+  });
+  renderHistory();
+}
+
+function drawDcfChart(canvasId, labels, values) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.offsetWidth || 500;
+  const H = canvas.height = 200;
+  const pad = { l: 55, r: 20, t: 20, b: 32 };
+  const max = Math.max(...values) * 1.1;
+  const min = 0;
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.strokeStyle = '#243049'; ctx.lineWidth = 1;
+  ctx.fillStyle = '#8fa3c8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (H - pad.t - pad.b) * i / 4;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    const val = max - (max - min) * i / 4;
+    ctx.fillText(formatShort(val), pad.l - 6, y + 3);
+  }
+
+  const gap = (W - pad.l - pad.r) / values.length;
+  const barW = gap * 0.6;
+  values.forEach((v, i) => {
+    const x = pad.l + gap * i + gap * 0.2;
+    const barH = (H - pad.t - pad.b) * (v - min) / (max - min);
+    const y = H - pad.b - barH;
+    const grad = ctx.createLinearGradient(0, y, 0, H - pad.b);
+    grad.addColorStop(0, '#f5b942');
+    grad.addColorStop(1, 'rgba(245,185,66,0.3)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, barW, barH);
+
+    ctx.fillStyle = '#8fa3c8';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(labels[i], x + barW / 2, H - 10);
+
+    ctx.fillStyle = '#f5b942';
+    ctx.fillText(formatShort(v), x + barW / 2, y - 4);
+  });
+
+  ctx.fillStyle = '#f5b942';
+  ctx.fillRect(pad.l, 4, 10, 3);
+  ctx.fillStyle = '#8fa3c8';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('自由现金流', pad.l + 14, 8);
 }
 
 /* ============ 事件初始化 ============ */
@@ -834,7 +944,7 @@ const searchIndex = [
   { icon:'📊', name:'定投计算器',      tag:'工具', action:() => goCalc('dca') },
   { icon:'📜', name:'债券定价计算器',  tag:'工具', action:() => goCalc('bond') },
   { icon:'📉', name:'期权盈亏计算器',  tag:'工具', action:() => goCalc('option') },
-  { icon:'🏢', name:'DCF 估值计算器',  tag:'即将上线', action:() => alert('DCF 估值器开发中，敬请期待！') },
+  { icon:'🏢', name:'DCF 估值计算器',  tag:'工具', action:() => goCalc('dcf') },
   { icon:'📈', name:'市场数据看板',    tag:'数据', action:() => scrollToSection('data') },
   { icon:'📚', name:'金融知识学习中心', tag:'学习', action:() => scrollToSection('learn') },
   { icon:'🧮', name:'复利终值公式',    tag:'公式', action:() => scrollToSection('learn') },
@@ -1064,6 +1174,11 @@ const PRESETS = {
   option: {
     longCall:  { o_type: 'call', o_pos: 'long' },
     shortPut:  { o_type: 'put',  o_pos: 'short' }
+  },
+  dcf: {
+    conservative: { d_g: 5,  d_r: 10, d_tg: 2 },
+    balanced:     { d_g: 10, d_r: 8,  d_tg: 3 },
+    growth:       { d_g: 20, d_r: 12, d_tg: 4 }
   }
 };
 
@@ -1078,6 +1193,7 @@ function applyPreset(calcKey, presetKey) {
   else if (calcKey === 'dca') calcDCA();
   else if (calcKey === 'loan') calcLoan();
   else if (calcKey === 'option') calcOption();
+  else if (calcKey === 'dcf') calcDcf();
 }
 
 

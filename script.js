@@ -44,6 +44,7 @@ function setRole(role) {
   if (!roles[role]) role = 'guest';
   currentRole = role;
   localStorage.setItem('fincalc_role', role);
+applyRoleColor(role);
   const r = roles[role];
   document.getElementById('currentRoleIcon').textContent = r.icon;
   document.getElementById('currentRoleName').textContent = r.name;
@@ -68,6 +69,28 @@ function setRole(role) {
     goPage('home');
   } else {
     goPage('workspace');
+  }
+}
+
+/* ============ 角色主题色 ============ */
+const ROLE_COLORS = {
+  guest:    { gold: '#f5b942', cyan: '#2ee6d6' },
+  student:  { gold: '#3b82f6', cyan: '#60a5fa' },
+  investor: { gold: '#22c77a', cyan: '#4ade80' },
+  pro:      { gold: '#a855f7', cyan: '#c084fc' }
+};
+
+function applyRoleColor(role) {
+  const c = ROLE_COLORS[role] || ROLE_COLORS.guest;
+  document.documentElement.style.setProperty('--gold', c.gold);
+  document.documentElement.style.setProperty('--cyan', c.cyan);
+  document.documentElement.setAttribute('data-role', role);
+  const logo = document.querySelector('.logo');
+  if (logo) {
+    logo.style.background = `linear-gradient(90deg, ${c.gold}, ${c.cyan})`;
+    logo.style.webkitBackgroundClip = 'text';
+    logo.style.backgroundClip = 'text';
+    logo.style.webkitTextFillColor = 'transparent';
   }
 }
 

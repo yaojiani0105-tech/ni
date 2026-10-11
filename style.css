@@ -29,6 +29,21 @@
   --green: #189a5e;
   --blue: #2563eb;
 }
+
+
+/* ===== 角色主题色 ===== */
+[data-role="student"] {
+  --gold: #3b82f6;
+  --cyan: #60a5fa;
+}
+[data-role="investor"] {
+  --gold: #22c77a;
+  --cyan: #4ade80;
+}
+[data-role="pro"] {
+  --gold: #a855f7;
+  --cyan: #c084fc;
+}
 body {
   font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   background: var(--bg);

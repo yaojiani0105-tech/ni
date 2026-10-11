@@ -44,7 +44,7 @@ function setRole(role) {
   if (!roles[role]) role = 'guest';
   currentRole = role;
   localStorage.setItem('fincalc_role', role);
-applyRoleColor(role);
+  applyRoleColor(role);
   const r = roles[role];
   document.getElementById('currentRoleIcon').textContent = r.icon;
   document.getElementById('currentRoleName').textContent = r.name;
@@ -501,13 +501,20 @@ function goCalc(key) {
   document.getElementById('calcForm').innerHTML = cfg.form;
   document.getElementById('calcResult').innerHTML = '<p style="color:var(--text2);font-size:14px;">填写左侧参数后点击计算，结果将显示在这里。</p>';
   goPage('calc');
-  // 恢复上次参数
   restoreParams(key);
-  // 绑定自动保存
+  applyRoleDefaults(key);
   bindParamAutoSave(key);
   setTimeout(() => cfg.run(), 50);
   setTimeout(renderHistory, 60);
 }
+
+/* ============ 角色默认参数 ============ */
+const ROLE_DEFAULTS = {
+  guest:    { c_pv: 100000,   l_p: 1000000, d_pmt: 3000,  b_f: 1000,   o_q: 1,   d_cf: 1000 },
+  student:  { c_pv: 10000,    l_p: 500000,  d_pmt: 500,   b_f: 1000,   o_q: 1,   d_cf: 500 },
+  investor: { c_pv: 500000,   l_p: 2000000, d_pmt: 5000,  b_f: 10000,  o_q: 10,  d_cf: 5000 },
+  pro:      { c_pv: 10000000, l_p: 5000000, d_pmt: 20000, b_f: 100000, o_q: 100, d_cf: 50000 }
+};
 
 /* ============ 参数记忆（localStorage） ============ */
 const PARAMS_KEY = 'fincalc_params';
@@ -530,6 +537,21 @@ function restoreParams(calcKey) {
   Object.entries(saved).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el) el.value = val;
+  });
+}
+
+function applyRoleDefaults(calcKey) {
+  const defaults = ROLE_DEFAULTS[currentRole] || ROLE_DEFAULTS.guest;
+  const all = getAllParams();
+  const saved = all[calcKey] || {};
+  const form = document.getElementById('calcForm');
+  if (!form) return;
+  form.querySelectorAll('input, select').forEach(el => {
+    if (!el.id) return;
+    if (saved[el.id] !== undefined) return;
+    if (defaults[el.id] !== undefined) {
+      el.value = defaults[el.id];
+    }
   });
 }
 
@@ -631,7 +653,8 @@ function calcLoan() {
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">${type==='equal'?'每月月供':'首月月供'}</div><div class="rc-value">¥${monthly.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">总利息</div><div class="rc-value">¥${totalInterest.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">还款总额</div><div class="rc-value">¥${(P+totalInterest).toFixed(2)}</div></div>
-    </div>    <div class="summary-row">
+    </div>
+    <div class="summary-row">
       <button class="copy-summary" onclick="copySummary('loan', this)">📄 复制摘要</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
@@ -671,7 +694,7 @@ function calcDCA() {
   const totalPrincipal = pmt * n;
   const profit = fv - totalPrincipal;
   document.getElementById('calcResult').innerHTML = `
-        <div class="result-cards">
+    <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">期末终值</div><div class="rc-value">¥${fv.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">投入本金</div><div class="rc-value">¥${totalPrincipal.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">累计收益</div><div class="rc-value">¥${profit.toFixed(2)}</div></div>
@@ -732,7 +755,7 @@ function calcBond() {
   convexity = convexity / (price * Math.pow(1 + yPeriod, 2) * n * n);
 
   document.getElementById('calcResult').innerHTML = `
-        <div class="result-cards">
+    <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">债券价格</div><div class="rc-value">¥${price.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">修正久期</div><div class="rc-value">${modified.toFixed(2)} 年</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">凸性</div><div class="rc-value">${convexity.toFixed(2)}</div></div>
@@ -800,7 +823,7 @@ function calcOption() {
     : (type === 'call' ? '无限' : `¥${((K - P) * Q * 100).toFixed(2)}`);
 
   document.getElementById('calcResult').innerHTML = `
-        <div class="result-cards">
+    <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">最大盈利</div><div class="rc-value">${profitText}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">最大亏损</div><div class="rc-value">${lossText}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">盈亏平衡点</div><div class="rc-value">¥${breakevenText}</div></div>
@@ -903,7 +926,7 @@ function calcDcf() {
   const enterpriseValue = pvSum + terminalPV;
 
   document.getElementById('calcResult').innerHTML = `
-       <div class="result-cards">
+    <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">预测期现值</div><div class="rc-value">¥${pvSum.toFixed(2)} 万</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">永续价值现值</div><div class="rc-value">¥${terminalPV.toFixed(2)} 万</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">企业总价值</div><div class="rc-value">¥${enterpriseValue.toFixed(2)} 万</div></div>
@@ -1232,7 +1255,6 @@ function exportTableCSV(btn) {
 }
 
 
-/* ============ 计算器预设方案 ============ */
 /* ============ 复制结果摘要 ============ */
 const SITE_URL = 'https://ni-97e.pages.dev';
 
@@ -1329,6 +1351,9 @@ function fallbackCopySummary(text, cb) {
   try { document.execCommand('copy'); cb(); } catch (e) {}
   document.body.removeChild(ta);
 }
+
+
+/* ============ 计算器预设方案 ============ */
 const PRESETS = {
   compound: {
     conservative: { c_r: 3 },

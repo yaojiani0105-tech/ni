@@ -315,7 +315,6 @@ function drawResultChart(canvasId, series) {
     lx += ctx.measureText(s.name).width + 32;
   });
 }
-
 /* ============ 计算历史 ============ */
 const HISTORY_KEY = 'fincalc_history';
 const HISTORY_MAX = 5;
@@ -377,6 +376,9 @@ const calcConfig = {
           <option value="12" selected>每月</option>
           <option value="365">每日</option>
         </select>
+      </div>
+      <div class="form-group"><label>年通胀率（%）</label>
+        <input type="number" id="c_infl" value="3" step="0.1" />
       </div>
       <div class="preset-row">
         <span class="preset-label">预设：</span>
@@ -571,26 +573,30 @@ function calcCompound() {
   const r = +document.getElementById('c_r').value / 100;
   const t = +document.getElementById('c_t').value;
   const n = +document.getElementById('c_n').value;
+  const infl = (+(document.getElementById('c_infl') || {}).value || 0) / 100;
   const fv = pv * Math.pow(1 + r/n, n*t);
   const interest = fv - pv;
   let rows = '';
-  const chartData = [pv];
+  const chartNominal = [pv];
+  const chartReal = [pv];
   for (let y = 1; y <= t; y++) {
     const v = pv * Math.pow(1 + r/n, n*y);
-    chartData.push(v);
-    rows += `<tr><td>第 ${y} 年</td><td>${v.toFixed(2)}</td><td>${(v-pv).toFixed(2)}</td></tr>`;
+    const real = v / Math.pow(1 + infl, y);
+    chartNominal.push(v);
+    chartReal.push(real);
+    rows += `<tr><td>第 ${y} 年</td><td>${v.toFixed(2)}</td><td>${(v-pv).toFixed(2)}</td><td>${real.toFixed(2)}</td></tr>`;
   }
   document.getElementById('calcResult').innerHTML = `
     <div class="result-cards">
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">期末终值</div><div class="rc-value">¥${fv.toFixed(2)}</div></div>
       <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">利息总额</div><div class="rc-value">¥${interest.toFixed(2)}</div></div>
-      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">本金翻倍</div><div class="rc-value">${(fv/pv).toFixed(2)} 倍</div></div>
+      <div class="result-card"><button class="rc-copy" onclick="copyCard(this)">📋</button><div class="rc-label">实际购买力</div><div class="rc-value">¥${(fv/Math.pow(1+infl,t)).toFixed(2)}</div></div>
     </div>
     <div class="summary-row">
       <button class="copy-summary" onclick="copySummary('compound', this)">📄 复制摘要</button>
     </div>
     <div class="result-chart-box">
-      <h3 style="font-size:14px;margin-bottom:10px;">资产增长曲线</h3>
+      <h3 style="font-size:14px;margin-bottom:10px;">资产增长曲线（名义 vs 实际购买力）</h3>
       <canvas id="resultChartCompound" height="200"></canvas>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 10px;">
@@ -598,12 +604,15 @@ function calcCompound() {
       <button class="export-csv" onclick="exportTableCSV(this)">📥 导出 CSV</button>
     </div>
     <table class="result-table">
-      <thead><tr><th>年份</th><th>终值</th><th>累计利息</th></tr></thead>
+      <thead><tr><th>年份</th><th>终值</th><th>累计利息</th><th>实际购买力</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     <div id="calcHistory"></div>
   `;
-  drawResultChart('resultChartCompound', [{ name: '资产总额', data: chartData }]);
+  drawResultChart('resultChartCompound', [
+    { name: '名义价值', data: chartNominal },
+    { name: '实际购买力', data: chartReal }
+  ]);
   saveHistory({
     type: 'compound',
     title: '复利 · ¥' + pv.toLocaleString(),
@@ -611,7 +620,6 @@ function calcCompound() {
   });
   renderHistory();
 }
-
 function calcLoan() {
   const P = +document.getElementById('l_p').value;
   const r = +document.getElementById('l_r').value / 100 / 12;
@@ -786,7 +794,6 @@ function calcBond() {
   });
   renderHistory();
 }
-
 function calcOption() {
   const S = +document.getElementById('o_s').value;
   const K = +document.getElementById('o_k').value;
@@ -947,6 +954,7 @@ function calcDcf() {
       <tbody>${rows}</tbody>
     </table>
     <div id="calcHistory"></div>
+    ${renderHeatmap(cf0, g, n)}
   `;
   drawDcfChart('resultChartDcf', chartLabels, chartValues);
   saveHistory({
@@ -1005,7 +1013,6 @@ function drawDcfChart(canvasId, labels, values) {
   ctx.textAlign = 'left';
   ctx.fillText('自由现金流', pad.l + 14, 8);
 }
-
 /* ============ 事件初始化 ============ */
 function initEvents() {
   const roleSelector = document.getElementById('roleSelector');
@@ -1270,7 +1277,7 @@ function copySummary(calcKey, btn) {
            `年利率：${r}% · ${t} 年\n` +
            `期末终值：${cards[0] ? cards[0].textContent : ''}\n` +
            `利息总额：${cards[1] ? cards[1].textContent : ''}\n` +
-           `本金翻倍：${cards[2] ? cards[2].textContent : ''}`;
+           `实际购买力：${cards[2] ? cards[2].textContent : ''}`;
   } else if (calcKey === 'loan') {
     const P = +g('l_p'), r = +g('l_r'), t = +g('l_t');
     const cards = document.querySelectorAll('.result-card .rc-value');
@@ -1558,3 +1565,52 @@ function applyFavorites() {
 }
 
 window.addEventListener('DOMContentLoaded', applyFavorites);
+
+
+/* ============ DCF 敏感性热力图 ============ */
+function renderHeatmap(baseCF, g, n) {
+  const waccList = [6, 7, 8, 9, 10];
+  const tgList = [2, 2.5, 3, 3.5, 4];
+
+  let html = '<div class="heatmap-wrap">';
+  html += '<h3 class="heatmap-title">🔥 敏感性分析（WACC × 永续增长）</h3>';
+  html += '<div class="heatmap">';
+  html += '<div class="heatmap-cell heatmap-head">WACC \\ g</div>';
+  tgList.forEach(t => {
+    html += `<div class="heatmap-cell heatmap-head">${t}%</div>`;
+  });
+
+  waccList.forEach(w => {
+    html += `<div class="heatmap-cell heatmap-head">${w}%</div>`;
+    tgList.forEach(t => {
+      const r = w / 100;
+      const tgRate = t / 100;
+      if (r <= tgRate) {
+        html += '<div class="heatmap-cell" style="background:#2a2a2a;color:#666">-</div>';
+        return;
+      }
+      let cf = baseCF;
+      let pvSum = 0;
+      for (let y = 1; y <= n; y++) {
+        cf = cf * (1 + g);
+        pvSum += cf / Math.pow(1 + r, y);
+      }
+      const terminalCF = cf * (1 + tgRate);
+      const terminalValue = terminalCF / (r - tgRate);
+      const terminalPV = terminalValue / Math.pow(1 + r, n);
+      const ev = pvSum + terminalPV;
+
+      const min = baseCF * 8;
+      const max = baseCF * 30;
+      const ratio = Math.min(Math.max((ev - min) / (max - min), 0), 1);
+      const rC = Math.round(34 + ratio * 221);
+      const gC = Math.round(199 - ratio * 150);
+      const bC = Math.round(122 - ratio * 60);
+      const color = `rgb(${rC},${gC},${bC})`;
+
+      html += `<div class="heatmap-cell" style="background:${color}">${Math.round(ev)}</div>`;
+    });
+  });
+  html += '</div></div>';
+  return html;
+}
